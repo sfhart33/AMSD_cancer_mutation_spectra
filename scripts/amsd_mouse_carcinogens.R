@@ -1,4 +1,5 @@
 library(tidyverse)
+setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
 source("amsd_functions.R")
 
 # load data from mouse paper (processed into spectra)
@@ -67,21 +68,41 @@ source("amsd_functions.R")
   saveRDS(mouse_amsd_output, "../outputs/mouse_amsd_output.rds")
   saveRDS(perms, "../outputs/mouse_amsd_perms.rds")
   mouse_amsd_output <- readRDS("../outputs/mouse_amsd_output.rds")
+  perms <- readRDS("../outputs/mouse_amsd_perms.rds")
   
-  pdf("../outputs/mouse_amsd_output.pdf")
   # volcano plot summary of everything together
-  mutate(mouse_amsd_output, log10pval = -log10(pvalues)) %>%
+  mouse_volcano <- mutate(mouse_amsd_output, log10pval = -log10(pvalues)) %>%
     ggplot()+
-      geom_point(aes(x=cosine_dif, y = log10pval, color = tissue, size = n))+
-      geom_hline(yintercept = -log10(0.05))+
-      geom_hline(yintercept = -log10(0.05/nrow(mouse_amsd_output)))+
-      geom_hline(yintercept = -log10(1/reps))+
+      geom_point(aes(x=cosines, y = log10pval, color = tissue, size = n))+
+      geom_hline(yintercept = -log10(0.05), linetype = "dashed")+
+      geom_hline(yintercept = -log10(0.05/nrow(mouse_amsd_output)), linetype = "dashed")+
+      #geom_hline(yintercept = -log10(1/reps))+
       geom_text(aes(x=0.225, y = (-log10(0.05/nrow(mouse_amsd_output))+0.1)), label = "FDR=0.05")+
       geom_text(aes(x=0.225, y = (-log10(0.05)+0.1)), label = "p=0.05")+
-      geom_text(aes(x=0.225, y = (-log10(1/reps)+0.1)), label = "theoretical max")+
+      #geom_text(aes(x=0.225, y = (-log10(1/reps)+0.1)), label = "theoretical max")+
       theme_classic()+
       xlim(0,0.25)+
       scale_size_continuous(range = c(3, 5))+
       xlab("Cosine distance")+
       ylab("-log10(p-value)")
-  dev.off()
+  mouse_volcano
+  ggsave("../outputs/mouse_amsd_output.png",
+         plot = mouse_volcano)
+  
+  mouse_amsd_output %>%
+    arrange(pvalues)
+  
+# violin plots of AMSD null distributions
+  # perms2 <- perms %>%
+  #   column_to_rownames(var = "rep") %>%
+  #   pivot_longer(cols = everything()) %>% 
+  #   separate(name, into = c("tissue", "exposure"), sep = "\\.", remove = FALSE) %>%
+  #   ggplot(aes(x = name, y = value))+
+  #   geom_violin(draw_quantiles = 0.95)+
+  #   theme_classic()+
+  #   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  #   xlab("")+
+  #   ylab("Cosine distance")+
+  #   geom_point(data = mouse_amsd_output, 
+  #              aes(x = paste(tissue, exposure, sep = "."), y = cosines))
+  
