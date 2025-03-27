@@ -10,7 +10,7 @@ source("amsd_functions.R")
   set.seed(123)
   results <- list()
   rep <- 0
-  seed = 123
+  seed = NULL
   n_sim = 1000
   sig_probs <- c(SBS1 = 0.3, SBS5 = 0.6, SBS18 = 0.1)
   signatures <- cosmic_signatures_v3.2
@@ -68,16 +68,19 @@ source("amsd_functions.R")
               success_frac = sum(pvalue <= 0.05)/n())
   output2
 
-  pdf("../outputs/amsd_simulations.pdf")
-  ggplot(output2, aes(x = factor(n_samples, levels = c("5","25","125","625")), # c("5","10","50","100")
-                      y = success_frac,
-                      color = factor(extra_muts, levels = c("0.02","0.05","0.1","0.2")),
-                      group = factor(extra_muts, levels = c("0.02","0.05","0.1","0.2"))))+
+  simulation_plot <- output2 %>%
+    ggplot(aes(x = factor(n_samples, levels = c("5","25","125","625")),
+               y = success_frac,
+               color = factor(extra_muts, levels = c("0.02","0.05","0.1","0.2")),
+               group = factor(extra_muts, levels = c("0.02","0.05","0.1","0.2"))))+
     geom_point()+
     geom_line() +
     facet_grid(n_mutations ~ exposure) +
     guides(color = guide_legend(title = "Extra mutations per \nexposure sample (%)"))+
     xlab("Sample count (same # exposed and non-exposed)")+
-    ylab("Difference detected \n(P<0.05, fraction of 10 simulations)")+
-    ggtitle("AMSD strength of detection in \nWES (50 mu/sample) and WGS (2500 mu/sample)")
-  dev.off()
+    ylab("Difference detected \n(p<0.05, fraction of 100 simulations)")+
+    # ggtitle("AMSD strength of detection in \nWES (50 mu/sample) and WGS (2500 mu/sample)")+
+    theme_bw()
+  simulation_plot
+  ggsave("../outputs/amsd_simulations.png",
+         plot = simulation_plot)

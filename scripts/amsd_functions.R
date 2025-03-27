@@ -1,7 +1,13 @@
 # load libraries
   library(tidyverse)
-  library(sigfit)
 
+# cosine distance
+  cosine_dist <- function(A, B){
+    cosine_similarity <- sum(A * B) / (sqrt(sum(A^2)) * sqrt(sum(B^2)))
+    cosine_distance <- 1 - cosine_similarity
+    return(cosine_distance)
+  }
+  
 # AMSD function
     amsd <- function(set1,
                      set2,
@@ -28,7 +34,7 @@
       # Compute observed distance
       spectra1 <- aggragate_spectra(set1)
       spectra2 <- aggragate_spectra(set2)
-      observed_distance <- 1 - cosine_sim(spectra1, spectra2)[[1]]
+      observed_distance <- cosine_dist(spectra1, spectra2)[[1]]
       
       # Prepare permutation dataset
       combined_set <- rbind(set1, set2)
@@ -42,7 +48,7 @@
         indices <- sample(seq_len(nrow(combined_set)), group_size)
         spectra_group1 <- aggragate_spectra(combined_set[indices, , drop = FALSE])
         spectra_group2 <- aggragate_spectra(combined_set[-indices, , drop = FALSE])
-        dist_rands[k] <- 1 - cosine_sim(spectra_group1, spectra_group2)[[1]]
+        dist_rands[k] <- cosine_dist(spectra_group1, spectra_group2)[[1]]
       }
       
       # Calculate p-value
@@ -118,8 +124,7 @@
       no_exposure_test <- simulate_spectra(n_samples = n_samples,
                                            n_mutations = n_mutations,
                                            sig_probs = sig_probs,
-                                           signatures = signatures,
-                                           seed = seed) %>%
+                                           signatures = signatures) %>%
         do.call(rbind, .) %>%
         as.data.frame()
       with_exposure_test <- simulate_spectra(n_samples = n_samples,
