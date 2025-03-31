@@ -46,12 +46,16 @@ library(tidyverse)
     arrange(pvalues)
 
 # violin plots of AMSD null distributions
-  mouse_violin <- perms %>%
+  perms2 <- perms %>%
     column_to_rownames(var = "rep") %>%
     pivot_longer(cols = everything()) %>%
-    separate(name, into = c("tissue", "exposure"), sep = "\\.", remove = FALSE) %>%
+    separate(name, into = c("tissue", "exposure"), sep = "\\.", remove = FALSE)
+  quantiles <- group_by(perms2, tissue, exposure) %>%
+    summarise(p0.05 = quantile(value, probs = 0.95),
+              FDR = quantile(value, probs = 1-(0.05/nrow(mouse_amsd_output))))
+  mouse_violin <- perms2 %>%
     ggplot(aes(x = exposure, y = value))+
-    geom_violin(adjust =0.5)+
+    geom_violin(adjust =0.5, scale = "width")+
     theme_classic()+
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
     xlab("")+

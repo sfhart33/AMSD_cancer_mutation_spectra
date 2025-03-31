@@ -34,6 +34,7 @@ source("amsd_functions.R")
 # merge
   anc_spectra <- inner_join(anc_calls, tcga_3mer_spectra)
   anc_counts <- inner_join(anc_calls, tcga_3mer)
+  saveRDS(anc_spectra, "../outputs/ancestry_spectra.rds")
   
 # Run AMSD
  min_mutations <- 10
@@ -102,12 +103,6 @@ source("amsd_functions.R")
   ancestry_amsd_output$pvalues <- pvalues
   ancestry_amsd_output$cosines <- cosines
 
-  saveRDS(ancestry_amsd_output, "../outputs/ancestry_amsd_output.rds")
-  saveRDS(perms, "../outputs/ancestry_amsd_perms.rds")
-  ancestry_amsd_output <- readRDS("../outputs/ancestry_amsd_output.rds")
-  perms <- readRDS("../outputs/ancestry_amsd_perms.rds")
-  
-  
 # number of samples per run
   n_anc_samples <- c()
   for(count in 1:nrow(anc_tumor_comparisons)){
@@ -124,37 +119,7 @@ source("amsd_functions.R")
       nrow()
     n_anc_samples <- c(n_anc_samples, min(n_ancestry1,n_ancestry2))
   }
-  
   ancestry_amsd_output$min_anc_n <- n_anc_samples
-  ancestry_amsd_output %>%
-    ggplot(aes(min_anc_n)) + geom_histogram()
-  # volcano plot summary of everything together
-  ancestry_volcano <- mutate(ancestry_amsd_output, log10pval = -log10(pvalues)) %>%
-    ggplot()+
-    geom_point(aes(x=cosines,
-                   y = log10pval,
-                   shape = comparison,
-                   color = tumor_type,
-                   size = min_anc_n))+
-    geom_hline(yintercept = -log10(0.05), linetype = "dashed")+
-    geom_hline(yintercept = -log10(0.05/nrow(ancestry_amsd_output)), linetype = "dashed")+
-    #geom_hline(yintercept = -log10(1/reps))+
-    geom_text(aes(x=0.225, y = (-log10(0.05/nrow(ancestry_amsd_output))+0.1)), label = "FDR=0.05")+
-    geom_text(aes(x=0.225, y = (-log10(0.05)+0.1)), label = "p=0.05")+
-    #geom_text(aes(x=0.225, y = (-log10(1/reps)+0.1)), label = "theoretical max")+
-    theme_classic()+
-    xlim(0,0.25)+
-    scale_size_continuous(
-      range = c(1, 6),
-      breaks = c(5,10,20,40,80,160)
-      )+
-    labs(x="Cosine distance",
-         y="-log10(p-value)", 
-         color="Tumor type",
-         shape="Ancestry comparison",
-         size="Tumor count\n(lower anc count)")
-  ancestry_volcano
-  ggsave("../outputs/ancestry_amsd_output.png",
-         plot = ancestry_volcano,
-         width = 7, height = 7.5, units = "in")
-  
+# save
+  saveRDS(ancestry_amsd_output, "../outputs/ancestry_amsd_output.rds")
+  saveRDS(perms, "../outputs/ancestry_amsd_perms.rds")
