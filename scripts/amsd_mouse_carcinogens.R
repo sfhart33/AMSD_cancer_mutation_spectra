@@ -93,16 +93,26 @@ source("amsd_functions.R")
     arrange(pvalues)
   
 # violin plots of AMSD null distributions
-  # perms2 <- perms %>%
-  #   column_to_rownames(var = "rep") %>%
-  #   pivot_longer(cols = everything()) %>% 
-  #   separate(name, into = c("tissue", "exposure"), sep = "\\.", remove = FALSE) %>%
-  #   ggplot(aes(x = name, y = value))+
-  #   geom_violin(draw_quantiles = 0.95)+
-  #   theme_classic()+
-  #   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
-  #   xlab("")+
-  #   ylab("Cosine distance")+
-  #   geom_point(data = mouse_amsd_output, 
-  #              aes(x = paste(tissue, exposure, sep = "."), y = cosines))
+  perms2 <- perms %>%
+    column_to_rownames(var = "rep") %>%
+    pivot_longer(cols = everything()) %>%
+    separate(name, into = c("tissue", "exposure"), sep = "\\.", remove = FALSE)
+  quantiles <- group_by(perms2, tissue, exposure) %>%
+    summarise(p0.05 = quantile(value, probs = 0.95),
+              FDR = quantile(value, probs = 1-(0.05/nrow(mouse_amsd_output))))
+  quantiles
+  perms2 %>%
+    ggplot(aes(x = exposure, y = value))+
+    geom_violin(adjust =0.5)+
+    theme_classic()+
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+    xlab("")+
+    ylab("Cosine distance")+
+    geom_point(data = mouse_amsd_output,
+               aes(x = exposure, y = cosines))+
+    geom_point(data = quantiles,
+               aes(x = exposure, y = p0.05), shape = 95, size = 5)+
+    geom_point(data = quantiles,
+               aes(x = exposure, y = FDR), shape = 95, size = 5)+
+    facet_grid(rows = vars(tissue))
   

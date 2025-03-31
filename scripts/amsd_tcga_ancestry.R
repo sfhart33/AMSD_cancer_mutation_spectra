@@ -35,7 +35,7 @@ source("amsd_functions.R")
   anc_spectra <- inner_join(anc_calls, tcga_3mer_spectra)
   anc_counts <- inner_join(anc_calls, tcga_3mer)
   
-######## TO DO #############v
+# Run AMSD
  min_mutations <- 10
  min_sample <- 5
   
@@ -46,12 +46,12 @@ source("amsd_functions.R")
     filter(n >= min_sample) %>%
     select(-n)
   
-  anc_tumor_comparisons <- select(anc_tumor_counts, tumor_type, ancestry1=anc3)%>%
+  anc_tumor_comparisons <- select(anc_tumor_counts, tumor_type, ancestry1=anc3) %>%
     full_join(select(anc_tumor_counts, tumor_type, ancestry2=anc3),
               relationship = "many-to-many") %>%
     mutate(comparison = paste0(ancestry1, "_", ancestry2)) %>%
     filter(comparison %in% c("afr_eas","afr_eur","eas_eur"))
-  anc_tumor_comparisons
+  anc_counts
 
   # Blank variables for outputs
   pvalues <- c()
@@ -107,10 +107,35 @@ source("amsd_functions.R")
   ancestry_amsd_output <- readRDS("../outputs/ancestry_amsd_output.rds")
   perms <- readRDS("../outputs/ancestry_amsd_perms.rds")
   
+  
+# number of samples per run
+  n_anc_samples <- c()
+  for(count in 1:nrow(anc_tumor_comparisons)){
+    tissue_type <- anc_tumor_comparisons[count,"tumor_type"]
+    ancestry1 <- anc_tumor_comparisons[count,"ancestry1"]
+    ancestry2 <- anc_tumor_comparisons[count,"ancestry2"]
+    n_ancestry1 <- filter(anc_counts,
+                          tumor_type == tissue_type,
+                          anc3 == ancestry1) %>%
+      nrow()
+    n_ancestry2 <- filter(anc_counts,
+                          tumor_type == tissue_type,
+                          anc3 == ancestry2) %>%
+      nrow()
+    n_anc_samples <- c(n_anc_samples, min(n_ancestry1,n_ancestry2))
+  }
+  
+  ancestry_amsd_output$min_anc_n <- n_anc_samples
+  ancestry_amsd_output %>%
+    ggplot(aes(min_anc_n)) + geom_histogram()
   # volcano plot summary of everything together
   ancestry_volcano <- mutate(ancestry_amsd_output, log10pval = -log10(pvalues)) %>%
     ggplot()+
-    geom_point(aes(x=cosines, y = log10pval, shape = comparison, color = tumor_type))+
+    geom_point(aes(x=cosines,
+                   y = log10pval,
+                   shape = comparison,
+                   color = tumor_type,
+                   size = min_anc_n))+
     geom_hline(yintercept = -log10(0.05), linetype = "dashed")+
     geom_hline(yintercept = -log10(0.05/nrow(ancestry_amsd_output)), linetype = "dashed")+
     #geom_hline(yintercept = -log10(1/reps))+
@@ -119,10 +144,17 @@ source("amsd_functions.R")
     #geom_text(aes(x=0.225, y = (-log10(1/reps)+0.1)), label = "theoretical max")+
     theme_classic()+
     xlim(0,0.25)+
-    scale_size_continuous(range = c(3, 5))+
-    xlab("Cosine distance")+
-    ylab("-log10(p-value)")
+    scale_size_continuous(
+      range = c(1, 6),
+      breaks = c(5,10,20,40,80,160)
+      )+
+    labs(x="Cosine distance",
+         y="-log10(p-value)", 
+         color="Tumor type",
+         shape="Ancestry comparison",
+         size="Tumor count\n(lower anc count)")
   ancestry_volcano
   ggsave("../outputs/ancestry_amsd_output.png",
-         plot = ancestry_volcano)
+         plot = ancestry_volcano,
+         width = 7, height = 7.5, units = "in")
   
