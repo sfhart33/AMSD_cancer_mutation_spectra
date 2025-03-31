@@ -33,10 +33,10 @@ plot1 <- as.data.frame(input) %>%
     theme(
       axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
       panel.spacing = unit(0,'lines'),
-      strip.text = element_blank(),
+      #strip.text = element_blank(),
       aspect.ratio = 1.5,
-      panel.grid.major.x = element_blank()
-      )+
+      legend.position="none",
+      panel.grid.major.x = element_blank())+
     xlab("Trinucleotide context")+
     ylab("Mutation count")
 plot1
