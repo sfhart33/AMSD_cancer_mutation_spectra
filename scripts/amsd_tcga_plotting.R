@@ -2,6 +2,7 @@ library(tidyverse)
 library(sigfit)
 library(ggrepel)
 data("cosmic_signatures_v3.2")
+setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
 source("amsd_functions.R")
 
 # load data
@@ -67,26 +68,26 @@ source("amsd_functions.R")
          plot = ancestry_violin)
   
 # mutational signature analysis
-  # t <- "UCEC"
-  # a1 <- "eas"
-  # a2 <- "eur"
+  # t <- "LUAD"
+  # a1 <- "afr"
+  # a2 <- "eas"
   # set1 <- filter(anc_spectra, tumor_type == t, anc3 == a1)
-  # fit_result1 <- fit_signatures(counts =  t(as.matrix(colMeans(set1[,6:101])))*sum(set1$mut_counts), 
+  # fit_result1 <- fit_signatures(counts =  t(as.matrix(colMeans(set1[,6:101])))*sum(set1$mut_counts),
   #                               signatures = cosmic_signatures_v3.2,
-  #                               iter = 2000, 
-  #                               warmup = 1000, 
-  #                               chains = 1, 
+  #                               iter = 2000,
+  #                               warmup = 1000,
+  #                               chains = 1,
   #                               seed = 1756) %>%
   #   retrieve_pars(par = "exposures")
   # set2 <- filter(anc_spectra, tumor_type == t, anc3 == a2)
-  # fit_result2 <- fit_signatures(counts =  t(as.matrix(colMeans(set2[,6:101])))*sum(set2$mut_counts), 
+  # fit_result2 <- fit_signatures(counts =  t(as.matrix(colMeans(set2[,6:101])))*sum(set2$mut_counts),
   #                               signatures = cosmic_signatures_v3.2,
-  #                               iter = 2000, 
-  #                               warmup = 1000, 
-  #                               chains = 1, 
+  #                               iter = 2000,
+  #                               warmup = 1000,
+  #                               chains = 1,
   #                               seed = 1756) %>%
   #   retrieve_pars(par = "exposures")
-  # sig_comp <- rbind(fit_result1$mean, 
+  # sig_comp <- rbind(fit_result1$mean,
   #                   fit_result1$lower_95,
   #                   fit_result1$upper_95,
   #                   fit_result2$mean,
@@ -106,20 +107,20 @@ source("amsd_functions.R")
   #   geom_pointrange(aes(xmin = a1_lower95, xmax = a1_upper95))+
   #   geom_pointrange(aes(ymin = a2_lower95, ymax = a2_upper95))+
   #   geom_abline(intercept = 0, slope = 1)+
-  #   geom_abline(intercept = 0.05, slope = 1, linetype = "dashed")+
-  #   geom_abline(intercept = -0.05, slope = 1, linetype = "dashed")+
+  #   # geom_abline(intercept = 0.05, slope = 1, linetype = "dashed")+
+  #   # geom_abline(intercept = -0.05, slope = 1, linetype = "dashed")+
   #   labs(x=paste(t, a1, "(signature exposure)"),
   #        y=paste(t, a2, "(signature exposure)"))+
-  #   lims(x=c(0,0.25), y=c(0,0.25))+
   #   theme_classic()+
   #   geom_text_repel(data = filter(sig_comp, abs(a1_mean - a2_mean) > 0.05),
   #                   aes(label = rownames(filter(sig_comp, abs(a1_mean - a2_mean) > 0.05))))
   # 
-  # 
-  # 
+
+
   # run for each significant ancestry
-  sig_outputs <- filter(ancestry_amsd_output, pvalues < 0.05)
-  
+    sig_outputs <- filter(ancestry_amsd_output, pvalues < 0.05)
+    signature_results <- data.frame(row.names = rownames(cosmic_signatures_v3.2))
+    
   pdf("../outputs/ancestry_signature_comparisons.pdf")
   for(count in 1:nrow(sig_outputs)){
     t <- sig_outputs[count, "tumor_type"]
@@ -131,6 +132,7 @@ source("amsd_functions.R")
                                   iter = 2000, 
                                   warmup = 1000, 
                                   chains = 1, 
+                                  opportunities = "human-exome",
                                   seed = 1756) %>%
       retrieve_pars(par = "exposures")
     set2 <- filter(anc_spectra, tumor_type == t, anc3 == a2)
@@ -139,6 +141,7 @@ source("amsd_functions.R")
                                   iter = 2000, 
                                   warmup = 1000, 
                                   chains = 1, 
+                                  opportunities = "human-exome",
                                   seed = 1756) %>%
       retrieve_pars(par = "exposures")
     sig_comp <- rbind(fit_result1$mean, 
@@ -150,12 +153,13 @@ source("amsd_functions.R")
       t() %>%
       as.data.frame()
     colnames(sig_comp) <- c("a1_mean", "a1_lower95", "a1_upper95", "a2_mean", "a2_lower95", "a2_upper95")
-    # sig_comp %>%
-    #   mutate(dif = a1_mean - a2_mean) %>%
-    #   ggplot(aes(x = rownames(sig_comp), y = dif))+
-    #   geom_col()+
-    #   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-    threshold = 0.025
+    sig_comp2 <- sig_comp  %>%
+      mutate(dif = a1_mean - a2_mean) %>%
+      select(a1_mean, a2_mean, dif)
+    colnames(sig_comp2) <- c(paste0(a1,"__",t, ".exp"), paste0(a2,"__",t, ".exp"), paste0(a1,"_",a2,"__",t, ".dif"))
+    signature_results <- cbind(signature_results, sig_comp2)
+    
+    threshold = 0.01
     plot1 <- sig_comp %>%
       ggplot(aes(x = a1_mean, y = a2_mean))+
       geom_point(size = 4)+
@@ -169,11 +173,11 @@ source("amsd_functions.R")
            y=paste(t, a2, "(signature exposure)"))+
       # lims(x=c(0,0.25),
       #      y=c(0,0.25))+
-      theme_classic()+
+      theme_classic()
+    plot2 <- plot1 +
       geom_text_repel(data = filter(sig_comp, abs(a1_mean - a2_mean) > threshold),
                       aes(label = rownames(filter(sig_comp, abs(a1_mean - a2_mean) > threshold))))
-      
-    print(plot1)
+    print(plot2)
     assign(paste0(t, ".", a1, "_v_", a2, "_sigcomp"), plot1)
     ggsave(paste0("../outputs/",t, ".", a1, "_v_", a2, "_sigcomp",".png"),
            plot = plot1)
@@ -181,4 +185,38 @@ source("amsd_functions.R")
   }
   dev.off()
 
+  signature_output <- t(signature_results) %>%
+    as.data.frame() %>% 
+    rownames_to_column(var = "description") %>%
+    separate(description, into = c("description","type"), sep = "\\.") %>%
+    separate(description, into = c("anc","tumor"), sep = "__") %>%
+    pivot_longer(cols = rownames(signature_results))
+  filter(signature_output, anc %in% c("afr", "eas", "eur"))
+  filter(signature_output, !(anc %in% c("afr", "eas", "eur"))) %>%
+    ggplot(aes(x = name, y=value, color = anc)) +
+      geom_boxplot(outliers = FALSE)+
+      geom_point(position=position_jitterdodge(jitter.width = 0.1))+
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  filter(signature_output, !(anc %in% c("afr", "eas", "eur"))) %>%
+    group_by(name, anc) %>%
+    summarise(mean = mean(value), sd = sd(value))#, ttest = t.test(value), wilcoxtest = wilcox.test(value))
+  signature_tests <- filter(signature_output, !(anc %in% c("afr", "eas", "eur"))) %>%
+    group_by(name, anc) %>%
+    summarise(mean = mean(value), sd = sd(value), n = n(), ttest = t.test(value)$p.value, wilcoxtest = wilcox.test(value)$p.value)
+  signature_tests
+  signature_tests %>%
+    arrange(wilcoxtest)
+  signature_tests %>%
+    arrange(ttest)
+  signature_tests %>%
+    ggplot(aes(x=mean, y = -log10(ttest), color = anc, size = n, label = name))+
+    geom_point()+
+    geom_hline(yintercept = -log10(0.05), linetype = "dashed")+
+    scale_size_continuous(range = c(3,4), breaks = c(4,6,10))+
+    geom_text(data = filter(signature_tests, ttest < 0.05),
+                    aes(x=mean, y = -log10(ttest), size = 8, label = name))+
+    theme_classic()+
+    labs(title = "Are any signatures dispropotiantly high/low across significant comparisons in AMSD?",
+         x = "Average difference in exposure for each comparison between the two ancestries",
+         y = "-log10(pvalue from t-test)")
     
