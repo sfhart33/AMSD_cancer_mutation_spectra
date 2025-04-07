@@ -1,4 +1,7 @@
 library(tidyverse)
+# library(gridExtra)
+library(ggpubr)
+library(svglite)
 library(sigfit)
 library(ggrepel)
 data("cosmic_signatures_v3.2")
@@ -16,8 +19,9 @@ source("amsd_functions.R")
     ggplot()+
     geom_point(aes(x=cosines,
                    y = log10pval,
-                   shape = comparison,
-                   color = tumor_type,
+                   # shape = comparison,
+                   # color = tumor_type,
+                   color = comparison,
                    size = min_anc_n))+
     geom_hline(yintercept = -log10(0.05), linetype = "dashed")+
     geom_hline(yintercept = -log10(0.05/nrow(ancestry_amsd_output)), linetype = "dashed")+
@@ -25,17 +29,21 @@ source("amsd_functions.R")
     geom_text(aes(x=0.225, y = (-log10(0.05/nrow(ancestry_amsd_output))+0.1)), label = "FDR=0.05")+
     geom_text(aes(x=0.225, y = (-log10(0.05)+0.1)), label = "p=0.05")+
     #geom_text(aes(x=0.225, y = (-log10(1/reps)+0.1)), label = "theoretical max")+
-    theme_classic()+
     xlim(0,0.25)+
     scale_size_continuous(
-      range = c(1, 6),
+      range = c(1, 4),
       breaks = c(5,10,20,40,80,160)
     )+
     labs(x="Cosine distance",
          y="-log10(p-value)", 
-         color="Tumor type",
-         shape="Ancestry comparison",
-         size="Tumor count\n(lower anc count)")
+         # color="Tumor type",
+         # shape="Ancestry comparison",
+         color="Ancestry\ncomparison",
+         size="Tumor count\n(lower count)")+
+    theme_classic()+ 
+    theme(legend.title.align = 0.5,
+          legend.direction = "vertical",
+          legend.box.just = "center")
   ancestry_volcano
   ggsave("../outputs/ancestry_amsd_output.png",
          plot = ancestry_volcano,
@@ -162,15 +170,18 @@ source("amsd_functions.R")
     threshold = 0.01
     plot1 <- sig_comp %>%
       ggplot(aes(x = a1_mean, y = a2_mean))+
-      geom_point(size = 4)+
+      geom_point() + #size = 4)+
       geom_pointrange(aes(xmin = a1_lower95, xmax = a1_upper95))+
       geom_pointrange(aes(ymin = a2_lower95, ymax = a2_upper95))+
       geom_abline(intercept = 0, slope = 1)+
       # geom_abline(intercept = threshold, slope = 1, linetype = "dashed")+
       # geom_abline(intercept = -threshold, slope = 1, linetype = "dashed")+
+      # labs(title = paste(t, a1, a2,"signature exposure comparison"),
+      #      x=paste(a1, "ancestry \n(signature exposure)"),
+      #      y=paste(a2, "ancestry \n(signature exposure)"))+
       labs(title = paste(t, a1, a2,"signature exposure comparison"),
-           x=paste(t, a1, "(signature exposure)"),
-           y=paste(t, a2, "(signature exposure)"))+
+           x=a1,
+           y=a2)+
       # lims(x=c(0,0.25),
       #      y=c(0,0.25))+
       theme_classic()
@@ -219,4 +230,88 @@ source("amsd_functions.R")
     labs(title = "Are any signatures dispropotiantly high/low across significant comparisons in AMSD?",
          x = "Average difference in exposure for each comparison between the two ancestries",
          y = "-log10(pvalue from t-test)")
-    
+  
+  
+  ancestry_volcano
+  
+  liver_plot <- LIHC.eas_v_eur_sigcomp + ggtitle("Liver") + theme(plot.title = element_text(hjust = 0.5))
+  esophageal_plot <- ESCA.eas_v_eur_sigcomp + ggtitle("Esophageal") + theme(plot.title = element_text(hjust = 0.5))
+  bladder_plot <- BLCA.eas_v_eur_sigcomp + ggtitle("Bladder") + theme(plot.title = element_text(hjust = 0.5))
+  uterine_plot1 <- UCEC.eas_v_eur_sigcomp + ggtitle("Uterine") + theme(plot.title = element_text(hjust = 0.5))
+  lung_plot1 <- LUAD.afr_v_eas_sigcomp +
+    ggtitle("Lung Adeno.") +
+    theme(plot.title = element_text(hjust = 0.5))
+  lung_plot2 <- LUAD.afr_v_eur_sigcomp + ggtitle("Lung Adeno.") + theme(plot.title = element_text(hjust = 0.5))
+  
+
+  colorectal_plot <- COAD.eas_v_eur_sigcomp + ggtitle("Colorectal") + theme(plot.title = element_text(hjust = 0.5))
+  uterine_plot2 <- UCEC.afr_v_eas_sigcomp + ggtitle("Uterine") + theme(plot.title = element_text(hjust = 0.5))
+  
+  skin_plot <- SKCM.eas_v_eur_sigcomp + ggtitle("Melanoma") + theme(plot.title = element_text(hjust = 0.5))
+  ovarian_plot1 <- OV.afr_v_eas_sigcomp + ggtitle("Ovarian") + theme(plot.title = element_text(hjust = 0.5))
+  ovarian_plot2 <- OV.eas_v_eur_sigcomp + ggtitle("Ovarian") + theme(plot.title = element_text(hjust = 0.5)) +
+    coord_flip()
+  head_plot1 <- HNSC.afr_v_eas_sigcomp + ggtitle("Head/neck") + theme(plot.title = element_text(hjust = 0.5))
+  head_plot2 <- HNSC.afr_v_eur_sigcomp + ggtitle("Head/neck") + theme(plot.title = element_text(hjust = 0.5))
+  head_plot3 <- HNSC.eas_v_eur_sigcomp + ggtitle("Head/neck") + theme(plot.title = element_text(hjust = 0.5))
+  uterine_plot3 <- UCEC.afr_v_eur_sigcomp + ggtitle("Uterine") + theme(plot.title = element_text(hjust = 0.5))
+  bladder_plot2 <- BLCA.afr_v_eur_sigcomp + ggtitle("Bladder") + theme(plot.title = element_text(hjust = 0.5))
+  colorectal_plot2 <- COAD.afr_v_eas_sigcomp + ggtitle("Colorectal") + theme(plot.title = element_text(hjust = 0.5))
+  breast_plot1 <- BRCA.afr_v_eas_sigcomp + ggtitle("Breast") + theme(plot.title = element_text(hjust = 0.5))
+  breast_plot2 <- BRCA.eas_v_eur_sigcomp + ggtitle("Breast") + theme(plot.title = element_text(hjust = 0.5))
+  lung_plot3 <- LUSC.eas_v_eur_sigcomp + ggtitle("Lung sq. cell") + theme(plot.title = element_text(hjust = 0.5))
+  
+  fig3 <- ggarrange(ancestry_volcano,
+                    ggarrange(NULL,
+                              ggarrange(esophageal_plot,
+                                        liver_plot,
+                                        lung_plot1,
+                                        uterine_plot1,
+                                        bladder_plot,
+                                        lung_plot2,
+                                        nrow = 2,
+                                        ncol = 3),
+                              NULL,
+                              ncol = 3,
+                              widths = c(0.1,0.8,0.1)),
+                    nrow = 2,
+                    labels = c("A", "B")) 
+  fig3
+  ggsave("../outputs/Figure3.png",
+         plot = fig3,
+         width = 7,
+         height = 7.5,
+         units = "in")
+  ggsave("../outputs/Figure3.svg",
+         plot = fig3,
+         width = 7,
+         height = 7.5,
+         units = "in")
+  supp_fig <- ggarrange(skin_plot,
+                        ovarian_plot1,
+                        ovarian_plot2,
+                        uterine_plot2,
+                        uterine_plot3,
+                        bladder_plot2,
+                        head_plot1,
+                        head_plot2,
+                        head_plot3,
+                        breast_plot1,
+                        breast_plot2,
+                        lung_plot3,
+                        colorectal_plot,
+                        colorectal_plot2,
+                        nrow = 5,
+                        ncol = 3)
+  supp_fig
+  ggsave("../outputs/Figure3_supp.png",
+         plot = supp_fig,
+         width = 7,
+         height = 11,
+         units = "in")
+  ggsave("../outputs/Figure3_supp.svg",
+         plot = supp_fig,
+         width = 7,
+         height = 11,
+         units = "in")
+  
