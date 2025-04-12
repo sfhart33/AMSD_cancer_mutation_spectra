@@ -12,7 +12,36 @@ source("amsd_functions.R")
   ancestry_amsd_output <- readRDS("../outputs/ancestry_amsd_output.rds")
   anc_spectra <- readRDS("../outputs/ancestry_spectra.rds")
   perms <- readRDS("../outputs/ancestry_amsd_perms.rds")
-
+  
+# difference FDR types
+  ancestry_amsd_output$padj_BH <- p.adjust(ancestry_amsd_output$pvalues, method="BH")
+  ancestry_amsd_output$padj_BY <- p.adjust(ancestry_amsd_output$pvalues, method="BY")
+  ancestry_amsd_output$padj_Bonf <- p.adjust(ancestry_amsd_output$pvalues, method="bonferroni")
+  # ancestry_amsd_output
+  ggplot(ancestry_amsd_output, aes(-log10(pvalues),-log10(padj_BH)))+
+    geom_point()+
+    geom_hline(yintercept = -log10(0.05))+
+    stat_smooth(method="lm",se=F)+
+    ggtitle("Benjamini-Hochberg vs unadjusted pvalues from ancestry comparison")
+  ancestry_amsd_output %>% filter(padj_Bonf < 1) %>%
+    ggplot(aes(-log10(pvalues),-log10(padj_Bonf)))+
+    geom_point()+
+    geom_hline(yintercept = -log10(0.05))+
+    stat_smooth(method="lm",se=F)+
+    ggtitle("Bonferroni vs unadjusted pvalues from ancestry comparison")
+  ggplot(ancestry_amsd_output, aes(-log10(pvalues),-log10(padj_BY)))+
+    geom_point()+
+    geom_hline(yintercept = -log10(0.05))+
+    ggtitle("Benjamini-Yekutieli vs unadjusted pvalues from ancestry comparison")
+  ancestry_amsd_output2 <- ancestry_amsd_output %>%
+    filter(comparison == "eas_eur")
+  ancestry_amsd_output2$pdj_BH2 <- p.adjust(ancestry_amsd_output2$pvalues, method="BH")
+  ggplot(ancestry_amsd_output2, aes(-log10(pvalues),-log10(pdj_BH2)))+
+    geom_point()+
+    geom_hline(yintercept = -log10(0.05))+
+    stat_smooth(method="lm",se=F)+
+    ggtitle("Benjamini-Hochberg vs unadjusted pvalues from EAS-EUR ancestry comparison")
+  arrange(ancestry_amsd_output2, pdj_BH2)
   
 # volcano plot summary of everything together
   ancestry_volcano <- mutate(ancestry_amsd_output, log10pval = -log10(pvalues)) %>%
@@ -25,10 +54,12 @@ source("amsd_functions.R")
                    size = min_anc_n))+
     geom_hline(yintercept = -log10(0.05), linetype = "dashed")+
     geom_hline(yintercept = -log10(0.05/nrow(ancestry_amsd_output)), linetype = "dashed")+
-    #geom_hline(yintercept = -log10(1/reps))+
-    geom_text(aes(x=0.225, y = (-log10(0.05/nrow(ancestry_amsd_output))+0.1)), label = "FDR=0.05")+
+    # geom_hline(yintercept = 2.7, linetype = "dashed")+
+    # geom_hline(yintercept = 1.9, linetype = "dashed")+
+    geom_text(aes(x=0.225, y = (-log10(0.05/nrow(ancestry_amsd_output))+0.1)), label = "Bonf=0.05")+
+    # geom_text(aes(x=0.225, y = 2.8), label = "B-Y=0.05")+
+    # geom_text(aes(x=0.225, y = 2.0), label = "B-H=0.05")+
     geom_text(aes(x=0.225, y = (-log10(0.05)+0.1)), label = "p=0.05")+
-    #geom_text(aes(x=0.225, y = (-log10(1/reps)+0.1)), label = "theoretical max")+
     xlim(0,0.25)+
     scale_size_continuous(
       range = c(1, 4),
@@ -202,7 +233,20 @@ source("amsd_functions.R")
     separate(description, into = c("description","type"), sep = "\\.") %>%
     separate(description, into = c("anc","tumor"), sep = "__") %>%
     pivot_longer(cols = rownames(signature_results))
-  filter(signature_output, anc %in% c("afr", "eas", "eur"))
+  filter(signature_output, anc %in% c("afr", "eas", "eur")) %>%
+    separate(name, into = c(NA, "sig"), sep = "BS", remove = FALSE) %>%
+    ggplot(aes(x = name, y = value, color = anc))+
+    geom_boxplot()+
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  filter(signature_output, anc %in% c("afr", "eas", "eur"), name %in% c("SBS1","SBS5")) %>%
+    separate(name, into = c(NA, "sig"), sep = "BS", remove = FALSE) %>%
+    ggplot(aes(x = name, y = value, color = anc))+
+    geom_boxplot()+
+    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+    labs(title = "Signature fitting, correcting for exons",
+         x = "signature",
+         y = "Fraction of mutations fit to signature")
+  
   filter(signature_output, !(anc %in% c("afr", "eas", "eur"))) %>%
     ggplot(aes(x = name, y=value, color = anc)) +
       geom_boxplot(outliers = FALSE)+

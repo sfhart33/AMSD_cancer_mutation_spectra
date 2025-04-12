@@ -8,6 +8,20 @@ library(tidyverse)
   mouse_carcinogen_counts <- readRDS("../inputs/mouse_carcinogen_spectra.rds") # counts
   mouse_carcinogen_spectra <- mouse_carcinogen_counts/rowSums(mouse_carcinogen_counts) # spectra
   
+
+  mouse_amsd_output$padj_BH <- p.adjust(mouse_amsd_output$pvalues, method="BH")
+  mouse_amsd_output$padj_BY <- p.adjust(mouse_amsd_output$pvalues, method="BY")
+  # ggplot(mouse_amsd_output, aes(-log10(pvalues),-log10(padj_BH)))+
+  #   geom_point()+
+  #   geom_hline(yintercept = -log10(0.05))+
+  #   stat_smooth(method="lm",se=F)+
+  #   ggtitle("Benjamini-Hochberg vs unadjusted pvalues from mouse comparison")
+  # ggplot(mouse_amsd_output, aes(-log10(pvalues),-log10(padj_BY)))+
+  #   geom_point()+
+  #   geom_hline(yintercept = -log10(0.05))+
+  #   ggtitle("Benjamini-Yekutieli vs unadjusted pvalues from mouse comparison")
+  # mouse_amsd_output %>% filter(padj_BH < 0.05)
+  
   # list of samples and attributes
   sample_table <- mouse_carcinogen_spectra %>%
     rownames_to_column(var = "label") %>%
