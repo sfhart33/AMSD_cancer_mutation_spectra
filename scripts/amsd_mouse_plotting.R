@@ -237,15 +237,14 @@ plot_mouse_spectra <- function(tis, exp){
   }
   p1 <- plot_mouse_spectra("LIVER","SPONTANEOUS")+
     theme(axis.title.x=element_blank(),
-          axis.text.x=element_blank())+
-    xlab(" ")
+          axis.text.x=element_blank())
   p2 <- plot_mouse_spectra("LIVER","1,2,3_TRICHLOROPROPANE")+
     theme(strip.text = element_blank(),
           axis.title.x=element_blank(),
           axis.text.x=element_blank())
   p3 <- plot_mouse_spectra("LIVER","OXAZEPAM")+
     theme(strip.text = element_blank())+
-    xlab(" ")
+    xlab("Trinucleotide context")
   spectra_plots <- ggarrange(p1, p2, p3, nrow = 3, ncol = 1, heights=c(0.4,0.3,0.4))
   top_row = ggarrange(mouse_volcano,NULL, spectra_plots, nrow=3, ncol=1, heights=c(0.55,0.02,0.4), labels = c("A","","B"))
   bottom_row <- ggarrange(exp_plot, NULL, TCP_plot,NULL, oxa_plot, nrow=5, ncol=1, heights=c(0.3,0.01,0.3,0.01,0.3), labels = c("C","","D","","E"))
@@ -263,3 +262,137 @@ plot_mouse_spectra <- function(tis, exp){
          units = "in")
   
   
+  # Suppfigs
+  filter(mouse_amsd_output, padj_BH < 0.05, tissue == "LUNG") 
+  sigs <- mexposuresig2 %>%
+    filter(tissue == "LUNG",
+           exposure %in% c("SPONTANEOUS","COBALT_METAL","ISOBUTYL_NITRITE","VINYLIDENE_CHLORIDE")) %>%
+    group_by(name) %>%
+    summarize(mean = mean(value)) %>%
+    filter(mean > 0) %>%
+    pull(name)
+  lung1 <- plot_mouse_spectra("LUNG","SPONTANEOUS")+
+    ggtitle("SPONTANEOUS")
+  lung2 <- plot_mouse_spectra("LUNG","COBALT_METAL")+
+    ggtitle("COBALT_METAL")
+  lung3 <- plot_mouse_spectra("LUNG","ISOBUTYL_NITRITE")+
+    ggtitle("ISOBUTYL_NITRITE")
+  lung4 <- plot_mouse_spectra("LUNG","VINYLIDENE_CHLORIDE")+
+    ggtitle("VINYLIDENE_CHLORIDE")
+  lung_plot <- mexposuresig2 %>%
+    filter(tissue == "LUNG",
+           exposure %in% c("SPONTANEOUS","COBALT_METAL","ISOBUTYL_NITRITE","VINYLIDENE_CHLORIDE"),
+           name %in% sigs) %>%
+    ggplot(aes(x = name, y = value, color = exposure))+
+    geom_boxplot(outliers = FALSE)+
+    geom_point(position=position_jitterdodge(jitter.width = 0.1))+
+    theme_classic()+
+    # theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+    #       legend.position="top",
+    #       legend.title = element_text(hjust = 0.5))+
+    guides(fill = guide_legend(title.position = "top"))+
+    labs(x = "Mutational signature",
+         y = "Signature fraction",
+         color = "Exposure")
+  lung_supp <- ggarrange(lung1,lung2,lung3,lung4, lung_plot, nrow=5, ncol=1, heights = c(0.15,0.15,0.15,0.15,0.4))
+  lung_supp
+  
+  
+  filter(mouse_amsd_output, padj_BH < 0.05, tissue == "LIVER") 
+  sigs <- mexposuresig2 %>%
+    filter(tissue == "LIVER",
+           exposure %in% c("SPONTANEOUS",
+                           "VINYLIDENE_CHLORIDE",
+                           "ANTHRAQUINONE",
+                           "BROMOCHLOROACETIC_ACID",
+                           "CUMENE",
+                           "DE-71",
+                           "FURAN",
+                           "PRIMACLONE")) %>%
+    group_by(name) %>%
+    summarize(mean = mean(value)) %>%
+    filter(mean > 0) %>%
+    pull(name)
+  liver1 <- plot_mouse_spectra("LIVER","SPONTANEOUS")+
+    ggtitle("SPONTANEOUS")+
+    theme(axis.title.x=element_blank(),
+          axis.text.x=element_blank())
+  liver2 <- plot_mouse_spectra("LIVER","VINYLIDENE_CHLORIDE")+
+    ggtitle("VINYLIDENE_CHLORIDE")+
+    theme(strip.text = element_blank(),
+          axis.title.x=element_blank(),
+          axis.text.x=element_blank())
+  liver3 <- plot_mouse_spectra("LIVER","ANTHRAQUINONE")+
+    ggtitle("ANTHRAQUINONE")+
+    theme(strip.text = element_blank(),
+          axis.title.x=element_blank(),
+          axis.text.x=element_blank())
+  liver4 <- plot_mouse_spectra("LIVER","BROMOCHLOROACETIC_ACID")+
+    ggtitle("BROMOCHLOROACETIC_ACID")+
+    theme(strip.text = element_blank(),
+          axis.title.x=element_blank(),
+          axis.text.x=element_blank())
+  liver5 <- plot_mouse_spectra("LIVER","CUMENE")+
+    ggtitle("CUMENE")+
+    theme(strip.text = element_blank(),
+          axis.title.x=element_blank(),
+          axis.text.x=element_blank())
+  liver6 <- plot_mouse_spectra("LIVER","DE-71")+
+    ggtitle("DE-71")+
+    theme(strip.text = element_blank(),
+          axis.title.x=element_blank(),
+          axis.text.x=element_blank())
+  liver7 <- plot_mouse_spectra("LIVER","FURAN")+
+    ggtitle("FURAN")+
+    theme(strip.text = element_blank(),
+          axis.title.x=element_blank(),
+          axis.text.x=element_blank())
+  liver8 <- plot_mouse_spectra("LIVER","PRIMACLONE")+
+    ggtitle("PRIMACLONE")+
+    theme(strip.text = element_blank())+
+    xlab("Trinucleotide context")
+  liver_plot <- mexposuresig2 %>%
+    filter(tissue == "LIVER",
+           exposure %in% c("SPONTANEOUS",
+                           "VINYLIDENE_CHLORIDE",
+                           "ANTHRAQUINONE",
+                           "BROMOCHLOROACETIC_ACID",
+                           "CUMENE",
+                           "DE-71",
+                           "FURAN",
+                           "PRIMACLONE"),
+           name %in% sigs) %>%
+    ggplot(aes(x = name, y = value, color = exposure))+
+    geom_boxplot(outliers = FALSE)+
+    geom_point(position=position_jitterdodge(jitter.width = 0.1))+
+    theme_classic()+
+    # theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+    #       legend.position="top",
+    #       legend.title = element_text(hjust = 0.5))+
+    guides(fill = guide_legend(title.position = "top"))+
+    labs(x = "Mutational signature",
+         y = "Signature fraction",
+         color = "Exposure")
+  liver_supp <- ggarrange(liver1,liver2,liver3,liver4,liver5,liver6,liver7,liver8,
+                          liver_plot, nrow=9, ncol=1, heights = c(0.125,0.1,0.1,0.1,0.1,0.1,0.1,0.125,0.45))
+  liver_supp
+  ggsave("../outputs/mouse_liver_supp.png",
+         plot = liver_supp,
+         width = 12,
+         height = 16,
+         units = "in")
+  ggsave("../outputs/mouse_liver_supp.svg",
+         plot = liver_supp,
+         width = 12,
+         height = 16,
+         units = "in")
+  ggsave("../outputs/mouse_lung_supp.png",
+         plot = lung_supp,
+         width = 12,
+         height = 16,
+         units = "in")
+  ggsave("../outputs/mouse_lung_supp.svg",
+         plot = lung_supp,
+         width = 12,
+         height = 16,
+         units = "in")
