@@ -1,5 +1,4 @@
 library(tidyverse)
-# library(gridExtra)
 library(ggpubr)
 library(svglite)
 library(sigfit)
@@ -15,33 +14,17 @@ source("amsd_functions.R")
   
 # difference FDR types
   ancestry_amsd_output$padj_BH <- p.adjust(ancestry_amsd_output$pvalues, method="BH")
-  ancestry_amsd_output$padj_BY <- p.adjust(ancestry_amsd_output$pvalues, method="BY")
+  # ancestry_amsd_output$padj_BY <- p.adjust(ancestry_amsd_output$pvalues, method="BY")
   ancestry_amsd_output$padj_Bonf <- p.adjust(ancestry_amsd_output$pvalues, method="bonferroni")
-  # ancestry_amsd_output
   ggplot(ancestry_amsd_output, aes(-log10(pvalues),-log10(padj_BH)))+
     geom_point()+
     geom_hline(yintercept = -log10(0.05))+
     stat_smooth(method="lm",se=F)+
     ggtitle("Benjamini-Hochberg vs unadjusted pvalues from ancestry comparison")
-  ancestry_amsd_output %>% filter(padj_Bonf < 1) %>%
-    ggplot(aes(-log10(pvalues),-log10(padj_Bonf)))+
-    geom_point()+
-    geom_hline(yintercept = -log10(0.05))+
-    stat_smooth(method="lm",se=F)+
-    ggtitle("Bonferroni vs unadjusted pvalues from ancestry comparison")
-  ggplot(ancestry_amsd_output, aes(-log10(pvalues),-log10(padj_BY)))+
-    geom_point()+
-    geom_hline(yintercept = -log10(0.05))+
-    ggtitle("Benjamini-Yekutieli vs unadjusted pvalues from ancestry comparison")
-  ancestry_amsd_output2 <- ancestry_amsd_output %>%
-    filter(comparison == "eas_eur")
-  ancestry_amsd_output2$pdj_BH2 <- p.adjust(ancestry_amsd_output2$pvalues, method="BH")
-  ggplot(ancestry_amsd_output2, aes(-log10(pvalues),-log10(pdj_BH2)))+
-    geom_point()+
-    geom_hline(yintercept = -log10(0.05))+
-    stat_smooth(method="lm",se=F)+
-    ggtitle("Benjamini-Hochberg vs unadjusted pvalues from EAS-EUR ancestry comparison")
-  arrange(ancestry_amsd_output2, pdj_BH2)
+  x <- -log10(ancestry_amsd_output$padj_BH)
+  y <- -log10(ancestry_amsd_output$pvalues)
+  BH_regression <- lm(y ~ x)
+  BH_threshold <- -log10(0.05) * coef(BH_regression)[2]
   
 # volcano plot summary of everything together
   ancestry_volcano <- mutate(ancestry_amsd_output, log10pval = -log10(pvalues)) %>%
@@ -54,12 +37,10 @@ source("amsd_functions.R")
                    size = min_anc_n))+
     geom_hline(yintercept = -log10(0.05), linetype = "dashed")+
     geom_hline(yintercept = -log10(0.05/nrow(ancestry_amsd_output)), linetype = "dashed")+
-    # geom_hline(yintercept = 2.7, linetype = "dashed")+
-    # geom_hline(yintercept = 1.9, linetype = "dashed")+
-    geom_text(aes(x=0.225, y = (-log10(0.05/nrow(ancestry_amsd_output))+0.1)), label = "Bonf=0.05")+
-    # geom_text(aes(x=0.225, y = 2.8), label = "B-Y=0.05")+
-    # geom_text(aes(x=0.225, y = 2.0), label = "B-H=0.05")+
+    geom_hline(yintercept = BH_threshold, linetype = "dashed")+
     geom_text(aes(x=0.225, y = (-log10(0.05)+0.1)), label = "p=0.05")+
+    geom_text(aes(x=0.225, y = (-log10(0.05/nrow(ancestry_amsd_output))+0.1)), label = "Bonferroni FDR=0.05")+
+    geom_text(aes(x=0.225, y = BH_threshold + 0.1), label = "Benjamini-Hochberg FDR=0.05")+
     xlim(0,0.25)+
     scale_size_continuous(
       range = c(1, 4),
@@ -201,9 +182,9 @@ source("amsd_functions.R")
     threshold = 0.01
     plot1 <- sig_comp %>%
       ggplot(aes(x = a1_mean, y = a2_mean))+
-      geom_point() + #size = 4)+
-      geom_pointrange(aes(xmin = a1_lower95, xmax = a1_upper95))+
-      geom_pointrange(aes(ymin = a2_lower95, ymax = a2_upper95))+
+      geom_point(size = 0.25)+
+      geom_pointrange(aes(xmin = a1_lower95, xmax = a1_upper95), size = 0.25)+
+      geom_pointrange(aes(ymin = a2_lower95, ymax = a2_upper95), size = 0.25)+
       geom_abline(intercept = 0, slope = 1)+
       # geom_abline(intercept = threshold, slope = 1, linetype = "dashed")+
       # geom_abline(intercept = -threshold, slope = 1, linetype = "dashed")+
@@ -320,42 +301,62 @@ source("amsd_functions.R")
                               widths = c(0.1,0.8,0.1)),
                     nrow = 2,
                     labels = c("A", "B")) 
-  fig3
+  fig3_new <- ggarrange(ancestry_volcano,
+                        ggarrange(esophageal_plot + coord_flip(),
+                                  liver_plot + coord_flip(),
+                                  bladder_plot + coord_flip(),
+                                  lung_plot1 + coord_flip(),
+                                  lung_plot2 + coord_flip(),
+                                  uterine_plot1 + coord_flip(),
+                                  uterine_plot2,
+                                  colorectal_plot + coord_flip(),
+                                  colorectal_plot2,
+                                  skin_plot + coord_flip(),
+                                  breast_plot1,
+                                  breast_plot2 + coord_flip(),
+                                  ovarian_plot2,
+                                  head_plot1,
+                                  bladder_plot2,
+                                  nrow = 3,
+                                  ncol = 5),
+                    nrow = 2,
+                    labels = c("A", "B")) 
+  fig3_new
   ggsave("../outputs/Figure3.png",
-         plot = fig3,
-         width = 7,
-         height = 7.5,
+         plot = fig3_new,
+         width = 10,
+         height = 12,
          units = "in")
   ggsave("../outputs/Figure3.svg",
-         plot = fig3,
-         width = 7,
-         height = 7.5,
+         plot = fig3_new,
+         width = 10,
+         height = 12,
          units = "in")
-  supp_fig <- ggarrange(skin_plot,
-                        ovarian_plot1,
-                        ovarian_plot2,
-                        uterine_plot2,
-                        uterine_plot3,
-                        bladder_plot2,
-                        head_plot1,
-                        head_plot2,
-                        head_plot3,
-                        breast_plot1,
-                        breast_plot2,
-                        lung_plot3,
-                        colorectal_plot,
-                        colorectal_plot2,
-                        nrow = 5,
-                        ncol = 3)
-  supp_fig
-  ggsave("../outputs/Figure3_supp.png",
-         plot = supp_fig,
-         width = 7,
-         height = 11,
-         units = "in")
-  ggsave("../outputs/Figure3_supp.svg",
-         plot = supp_fig,
-         width = 7,
-         height = 11,
-         units = "in")
+  # supp_fig <- ggarrange(skin_plot,
+  #                       ovarian_plot1,
+  #                       ovarian_plot2,
+  #                       uterine_plot2,
+  #                       uterine_plot3,
+  #                       bladder_plot2,
+  #                       head_plot1,
+  #                       head_plot2,
+  #                       head_plot3,
+  #                       breast_plot1,
+  #                       breast_plot2,
+  #                       lung_plot3,
+  #                       colorectal_plot,
+  #                       colorectal_plot2,
+  #                       nrow = 5,
+  #                       ncol = 3)
+  # supp_fig
+  # ggsave("../outputs/Figure3_supp.png",
+  #        plot = supp_fig,
+  #        width = 7,
+  #        height = 11,
+  #        units = "in")
+  # ggsave("../outputs/Figure3_supp.svg",
+  #        plot = supp_fig,
+  #        width = 7,
+  #        height = 11,
+  #        units = "in")
   

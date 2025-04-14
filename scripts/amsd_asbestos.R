@@ -171,43 +171,56 @@ SV_matrix
     ggplot(aes(MuType, spectra1))+
     geom_col()+
     ylab("count") +
+    theme_classic() +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
-    theme_clasic() +
-    ggtitle("CNV spectra: professionally exposed to asbestos (sum)")
+    ggtitle("Prof exp to asbestos (sum, n = 75 tumors)")
   
   non_exp_cnv_plot <- as.data.frame(spectra2) %>%
     rownames_to_column(var = "MuType") %>%
     ggplot(aes(MuType, spectra2))+
     geom_col()+
     ylab("count") +
+    theme_classic() +
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
-    theme_clasic() +
-    ggtitle("CNV spectra: NOT professionally exposed to asbestos (sum)")
+    ggtitle("NOT prof exp to asbestos (sum, n = 28 tumors)")
   exp_cnv_plot
   non_exp_cnv_plot
-  
-# plots
-  
-  asbestos_fig <- ggarrange(plot_amsd_histogram(amsd_output_sbs_mean) + ggtitle("SBS spectra, means"),
-                            plot_amsd_histogram(amsd_output_cnv_mean) + ggtitle("CNV spectra, means"),
-                            plot_amsd_histogram(amsd_output_sv_mean) + ggtitle("SV spectra, means"),
-                            plot_amsd_histogram(amsd_output_sbs_sum) + ggtitle("SBS spectra, sums"),
-                            plot_amsd_histogram(amsd_output_cnv_sum) + ggtitle("CNV spectra, sums"),
-                            plot_amsd_histogram(amsd_output_sv_sum) + ggtitle("SV spectra, sums"),
-                            high_outlier_plot,
-                            plot_amsd_histogram(amsd_output_cnv_sum2) + ggtitle("CNV spectra, sums,\nno outliers"),
-                            nrow = 3,
-                            ncol = 3#,
-                            #labels="AUTO"#, 
-                            #labels = c("A", "B")
-                            ) 
-  
-  asbestos_fig
-  ggarrange(asbestos_fig,
-            ggarrange(high_outlier_plot,
-                      plot_amsd_histogram(amsd_output_cnv_sum2) + ggtitle("CNV spectra, sums,\nno outliers"),
-                      nrow = 1,
-                      ncol = 2),
-            nrow = 2)
 
+# plots
+  p1 <- plot_amsd_histogram(amsd_output_sbs_mean) +
+    ggtitle("SBS spectra, means") +
+    geom_label(x = amsd_output_sbs_mean$cosine, y = 1000, label = paste0("p=",amsd_output_sbs_mean$p), angle=90, hjust = 0)
+  p2 <- plot_amsd_histogram(amsd_output_sbs_sum) +
+    ggtitle("SBS spectra, sums") +
+    geom_label(x = amsd_output_sbs_sum$cosine, y = 1000, label = paste0("p=",amsd_output_sbs_sum$p), angle=90, hjust = 0)
+  p3 <- plot_amsd_histogram(amsd_output_cnv_mean) +
+    ggtitle("CNV spectra, means") +
+    geom_label(x = amsd_output_cnv_mean$cosine, y = 1000, label = paste0("p=",amsd_output_cnv_mean$p), angle=90, hjust = 0)
+  p4 <- plot_amsd_histogram(amsd_output_cnv_sum) +
+    ggtitle("CNV spectra, sums") +
+    geom_label(x = amsd_output_cnv_sum$cosine, y = 1000, label = paste0("p=",amsd_output_cnv_sum$p), angle=90)
+  p5 <- plot_amsd_histogram(amsd_output_cnv_sum2) +
+    ggtitle("CNV spectra, sums,\nno outliers") +
+    geom_label(x = amsd_output_cnv_sum2$cosine, y = 1000, label = paste0("p=",amsd_output_cnv_sum2$p), angle=90, hjust = 0)
+
+  asbestos_fig1 <- ggarrange(p1,p3,
+                             high_outlier_plot, 
+                             p2,p4,p5,
+                             nrow = 2,
+                             ncol = 3,
+                             labels = c("A", "C", "E", "B","D", "F")
+  )
+  asbestos_fig2 <- ggarrange(exp_cnv_plot,
+                             non_exp_cnv_plot,
+                             nrow = 2,
+                             ncol = 1,
+                             labels = c("G", "H"))
+  asbestos_fig <- ggarrange(asbestos_fig1,
+                            asbestos_fig2,
+                            nrow = 2,
+                            ncol = 1)
+  #asbestos_fig
+  ggsave("../outputs/asbestos_supp_fig.png",
+         plot = asbestos_fig,
+         width = 7, height = 10, units = "in")
   
