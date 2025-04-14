@@ -6,16 +6,6 @@ input+input/2
 COLORS <- c("deepskyblue", "black", "firebrick2", "gray76", "darkolivegreen3", "rosybrown2")
 
 
-as.data.frame(input) %>%
-  rownames_to_column(var = "m") %>%
-  mutate(m = str_replace(m, "_", ">")) %>%
-  separate(m, into = c("mut", "trinuc"), sep = "\\.", remove = FALSE) %>%
-  separate(mut, into = c("from", "to"), sep = ">", remove = FALSE) %>%
-  ggplot(aes(x=m, y = input, fill = mut))+
-    geom_col()+
-    theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
-    scale_fill_manual(values = COLORS)
-
 plot1 <- as.data.frame(input) %>%
   rownames_to_column(var = "m") %>%
   mutate(m = str_replace(m, "_", ">")) %>%
@@ -36,7 +26,8 @@ plot1 <- as.data.frame(input) %>%
       #strip.text = element_blank(),
       aspect.ratio = 1.5,
       legend.position="none",
-      panel.grid.major.x = element_blank())+
+      panel.grid.major.x = element_blank(),
+      panel.border = element_blank())+
     xlab("Trinucleotide context")+
     ylab("Mutation count")
 plot1
@@ -73,6 +64,7 @@ ggsave("../outputs/test_spectrum.png", plot1)
   default_df$spectra1 <- spectra1
   default_df$spectra1sd <- spectra1sd
   default_df$spectra <- names(spectra1)
+  saveRDS(select(default_df, -spectra1, spectra1sd), file = "../inputs/default_spectrum_df.rds")
   default_df %>%
     ggplot(aes(x=trinuc, y = spectra1, fill = mut))+
     geom_col()+
@@ -91,4 +83,4 @@ ggsave("../outputs/test_spectrum.png", plot1)
       panel.grid.major.x = element_blank()
     )+
     xlab("Trinucleotide context")+
-    ylab("Mutation count")
+    ylab("Mutation fraction")
