@@ -51,7 +51,7 @@ source("amsd_functions.R")
          # color="Tumor type",
          # shape="Ancestry comparison",
          color="Ancestry\ncomparison",
-         size="Tumor count\n(lower count)")+
+         size="Tumor count\n(smaller group)")+
     theme_classic()+ 
     theme(legend.title.align = 0.5,
           legend.direction = "vertical",
@@ -202,8 +202,8 @@ source("amsd_functions.R")
                       aes(label = rownames(filter(sig_comp, abs(a1_mean - a2_mean) > threshold))))
     print(plot2)
     assign(paste0(t, ".", a1, "_v_", a2, "_sigcomp"), plot1)
-    ggsave(paste0("../outputs/",t, ".", a1, "_v_", a2, "_sigcomp",".png"),
-           plot = plot1)
+    # ggsave(paste0("../outputs/",t, ".", a1, "_v_", a2, "_sigcomp",".png"),
+    #        plot = plot1)
     print(paste(t, a1, "signature exposure comparison done"))
   }
   dev.off()
@@ -325,12 +325,12 @@ source("amsd_functions.R")
   ggsave("../outputs/Figure3.png",
          plot = fig3_new,
          width = 10,
-         height = 12,
+         height = 10,
          units = "in")
   ggsave("../outputs/Figure3.svg",
          plot = fig3_new,
          width = 10,
-         height = 12,
+         height = 10,
          units = "in")
   # supp_fig <- ggarrange(skin_plot,
   #                       ovarian_plot1,
