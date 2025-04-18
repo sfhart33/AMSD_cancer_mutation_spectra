@@ -331,6 +331,7 @@ source("amsd_functions.R")
          plot = fig3_new,
          width = 10,
          height = 10,
+<<<<<<< HEAD
          units = "in")
   
 
@@ -370,6 +371,8 @@ source("amsd_functions.R")
          plot = fig3_v3,
          width = 10,
          height = 10,
+=======
+>>>>>>> fa52b3659e53b37f4df769935bf266ae79b47eba
          units = "in")
   # supp_fig <- ggarrange(skin_plot,
   #                       ovarian_plot1,

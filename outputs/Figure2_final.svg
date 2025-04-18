@@ -48,7 +48,11 @@
      inkscape:window-x="2869"
      inkscape:window-y="-11"
      inkscape:window-maximized="1"
+<<<<<<< HEAD
      inkscape:current-layer="g1"
+=======
+     inkscape:current-layer="g6217"
+>>>>>>> fa52b3659e53b37f4df769935bf266ae79b47eba
      inkscape:document-rotation="0"
      inkscape:showpageshadow="2"
      inkscape:pagecheckerboard="0"
@@ -14130,7 +14134,11 @@
            textLength="34.049999"
            lengthAdjust="spacingAndGlyphs"
            id="text162"
+<<<<<<< HEAD
            transform="translate(73.906708,-0.3032588)">P=0.05</text>
+=======
+           transform="translate(73.906708,-1.8032588)">p=0.05</text>
+>>>>>>> fa52b3659e53b37f4df769935bf266ae79b47eba
         <text
            font-family="Arial, Arial_MSFontService, sans-serif"
            font-weight="400"
