@@ -51,7 +51,7 @@ source("amsd_functions.R")
          # color="Tumor type",
          # shape="Ancestry comparison",
          color="Ancestry\ncomparison",
-         size="Tumor count\n(lower count)")+
+         size="Tumor count\n(smaller group)")+
     theme_classic()+ 
     theme(legend.title.align = 0.5,
           legend.direction = "vertical",
@@ -202,8 +202,8 @@ source("amsd_functions.R")
                       aes(label = rownames(filter(sig_comp, abs(a1_mean - a2_mean) > threshold))))
     print(plot2)
     assign(paste0(t, ".", a1, "_v_", a2, "_sigcomp"), plot1)
-    ggsave(paste0("../outputs/",t, ".", a1, "_v_", a2, "_sigcomp",".png"),
-           plot = plot1)
+    # ggsave(paste0("../outputs/",t, ".", a1, "_v_", a2, "_sigcomp",".png"),
+    #        plot = plot1)
     print(paste(t, a1, "signature exposure comparison done"))
   }
   dev.off()
@@ -325,12 +325,51 @@ source("amsd_functions.R")
   ggsave("../outputs/Figure3.png",
          plot = fig3_new,
          width = 10,
-         height = 12,
+         height = 10,
          units = "in")
   ggsave("../outputs/Figure3.svg",
          plot = fig3_new,
          width = 10,
-         height = 12,
+         height = 10,
+         units = "in")
+  
+
+  esophageal_plot + coord_flip() + xlim(0,0.15) +ylim(0,0.15)
+  liver_plot + coord_flip() + xlim(0,0.16) +ylim(0,0.16)
+  #bladder_plot + coord_flip() + xlim(0,0.2) +ylim(0,0.2)
+  uterine_plot1 + coord_flip() + xlim(0,0.15) +ylim(0,0.15)
+  uterine_plot2 + xlim(0,0.15) +ylim(0,0.15)
+  colorectal_plot + coord_flip() + xlim(0,0.15) +ylim(0,0.15)
+  colorectal_plot2 + xlim(0,0.15) +ylim(0,0.15)
+  breast_plot1 + xlim(0,0.15) +ylim(0,0.15)
+  breast_plot2 + coord_flip() + xlim(0,0.15) +ylim(0,0.15)
+  head_plot1 + xlim(0,0.17) +ylim(0,0.17)
+  fig3_v3 <- ggarrange(ancestry_volcano,
+                        ggarrange(esophageal_plot + coord_flip() + xlim(0,0.15) +ylim(0,0.15),
+                                  liver_plot + coord_flip() + xlim(0,0.16) +ylim(0,0.16),
+                                  bladder_plot + coord_flip(),
+                                  lung_plot1 + coord_flip(),
+                                  lung_plot2 + coord_flip(),
+                                  uterine_plot1 + coord_flip() + xlim(0,0.15) +ylim(0,0.15),
+                                  uterine_plot2 + xlim(0,0.15) +ylim(0,0.15),
+                                  colorectal_plot + coord_flip() + xlim(0,0.15) +ylim(0,0.15),
+                                  colorectal_plot2 + xlim(0,0.15) +ylim(0,0.15),
+                                  skin_plot + coord_flip(),
+                                  breast_plot1 + xlim(0,0.15) +ylim(0,0.15),
+                                  breast_plot2 + coord_flip() + xlim(0,0.15) +ylim(0,0.15),
+                                  ovarian_plot2,
+                                  head_plot1 + xlim(0,0.17) +ylim(0,0.17),
+                                  bladder_plot2,
+                                  nrow = 3,
+                                  ncol = 5),
+                        nrow = 2,
+                        labels = c("A", "B")) 
+  fig3_new
+  fig3_v3
+  ggsave("../outputs/Figure3_v3.png",
+         plot = fig3_v3,
+         width = 10,
+         height = 10,
          units = "in")
   # supp_fig <- ggarrange(skin_plot,
   #                       ovarian_plot1,
