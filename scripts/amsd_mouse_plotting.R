@@ -157,9 +157,7 @@ library(tidyverse)
          color = "Exposure")
   
 # spectra plots
-plot_mouse_spectra <- function(tis, exp){
-  
-}
+
   samples <- pull(filter(sample_table, tissue == "LIVER", exposure == "SPONTANEOUS"), label)
   spectra1 <- colMeans(mouse_carcinogen_spectra[samples,], na.rm=TRUE)
   spectra1sd <- apply(mouse_carcinogen_spectra[samples,], 2, sd)
