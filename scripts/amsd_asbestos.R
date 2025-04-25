@@ -5,6 +5,7 @@ source("amsd_functions.R")
 
 # load data
   samples <- read.table("../inputs/asbestos_sample_data.tsv", sep = "\t", header = TRUE)
+  asb_sigs <- read.table("../inputs/asbestos_signatures.txt", sep = "\t", header = TRUE)
   asbestos_sbs_spectra <- readRDS("../inputs/asbestos_sbs_spectra.rds") %>%
     rownames_to_column(var = "sample") %>%
     separate(sample, c("sample","seq"), sep = "\\.") %>% # drop extra label
@@ -186,6 +187,68 @@ SV_matrix
   exp_cnv_plot
   non_exp_cnv_plot
 
+# compare signatures
+
+  sigs_exp <- filter(asb_sigs, sample %in% samples_exp) %>%
+    subset(select=CN1:CN19)
+  sigs_nonexp <- filter(asb_sigs, sample %in% samples_nonexp) %>%
+    subset(select=CN1:CN19)
+  sigs_nonexp_no_outlier <- filter(asb_sigs, sample %in% samples_nonexp) %>%
+    filter(!(sample %in% c("MESO_007_T","MESO_107_T"))) %>%
+    subset(select=CN1:CN19)
+  
+  
+  sig_plot1 <- data.frame(type = "means",
+             exp = colMeans(sigs_exp/rowSums(sigs_exp)),
+             nonexp = colMeans(sigs_nonexp/rowSums(sigs_nonexp)),
+             exp_sd = sapply(sigs_exp/rowSums(sigs_exp), sd)/sqrt(nrow(sigs_exp)),
+             nonexp_sd = sapply(sigs_nonexp/rowSums(sigs_nonexp), sd)/sqrt(nrow(sigs_nonexp))) %>%
+    rownames_to_column(var = "Signature") %>%
+    ggplot(aes(exp,nonexp, label = rownames(sigs_comp)))+
+    geom_point(size = 0.25)+
+    geom_pointrange(aes(xmin = exp-exp_sd, xmax = exp+exp_sd), size = 0.25)+
+    geom_pointrange(aes(ymin = nonexp-nonexp_sd, ymax = nonexp+nonexp_sd), size = 0.25)+
+    geom_abline(intercept = 0, slope = 1)+
+    geom_text(check_overlap = TRUE)+
+    theme_classic()+
+    labs(title= "CNV signatures, means,\nwith outliers",
+         x = "Prof. exposed to asbestos",
+         y = "NOT prof. exp. to asbestos")
+  
+  sig_plot2 <- data.frame(type = "sums",
+             exp = colMeans(sigs_exp),
+             nonexp = colMeans(sigs_nonexp),
+             exp_sd = sapply(sigs_exp, sd)/sqrt(nrow(sigs_exp)),
+             nonexp_sd = sapply(sigs_nonexp, sd)/sqrt(nrow( sigs_nonexp))) %>%
+    rownames_to_column(var = "Signature") %>%
+    ggplot(aes(exp,nonexp, label = rownames(sigs_comp)))+
+    geom_point(size = 0.25)+
+    geom_pointrange(aes(xmin = exp-exp_sd, xmax = exp+exp_sd), size = 0.25)+
+    geom_pointrange(aes(ymin = nonexp-nonexp_sd, ymax = nonexp+nonexp_sd), size = 0.25)+
+    geom_abline(intercept = 0, slope = 1)+
+    geom_text(check_overlap = TRUE)+
+    theme_classic()+
+    labs(title= "CNV signatures, sums,\nwith outliers",
+         x = "Prof. exposed to asbestos",
+         y = "NOT prof. exp. to asbestos")
+  
+  sig_plot3 <- data.frame(type = "sums_NO",
+             exp = colMeans(sigs_exp),
+             nonexp = colMeans(sigs_nonexp_no_outlier),
+             exp_sd = sapply(sigs_exp, sd)/sqrt(nrow(sigs_exp)),
+             nonexp_sd = sapply(sigs_nonexp_no_outlier, sd)/sqrt(nrow(sigs_nonexp_no_outlier)))  %>%
+    rownames_to_column(var = "Signature") %>%
+    ggplot(aes(exp,nonexp, label = rownames(sigs_comp)))+
+    geom_point(size = 0.25)+
+    geom_pointrange(aes(xmin = exp-exp_sd, xmax = exp+exp_sd), size = 0.25)+
+    geom_pointrange(aes(ymin = nonexp-nonexp_sd, ymax = nonexp+nonexp_sd), size = 0.25)+
+    geom_abline(intercept = 0, slope = 1)+
+    geom_text(check_overlap = TRUE)+
+    theme_classic()+
+    labs(title= "CNV signatures, sums,\nno outliers",
+         x = "Prof. exposed to asbestos",
+         y = "NOT prof. exp. to asbestos")
+
 # plots
   p1 <- plot_amsd_histogram(amsd_output_sbs_mean) +
     ggtitle("SBS spectra, means") +
@@ -203,24 +266,23 @@ SV_matrix
     ggtitle("CNV spectra, sums,\nno outliers") +
     geom_label(x = amsd_output_cnv_sum2$cosine, y = 1000, label = paste0("p=",amsd_output_cnv_sum2$p), angle=90, hjust = 0)
 
-  asbestos_fig1 <- ggarrange(p1,p3,
-                             high_outlier_plot, 
-                             p2,p4,p5,
-                             nrow = 2,
-                             ncol = 3,
-                             labels = c("A", "C", "E", "B","D", "F")
+  
+  
+  asbestos_fig <- ggarrange(p1,
+                            p2,
+                            high_outlier_plot, 
+                            p3,
+                            p4,
+                            p5,
+                            sig_plot1,
+                            sig_plot2,
+                            sig_plot3,
+                            nrow = 3,
+                            ncol = 3,
+                            labels = c("A", "B", "C", "D", "E", "F","G", "H", "I")
   )
-  asbestos_fig2 <- ggarrange(exp_cnv_plot,
-                             non_exp_cnv_plot,
-                             nrow = 2,
-                             ncol = 1,
-                             labels = c("G", "H"))
-  asbestos_fig <- ggarrange(asbestos_fig1,
-                            asbestos_fig2,
-                            nrow = 2,
-                            ncol = 1)
-  #asbestos_fig
+
   ggsave("../outputs/asbestos_supp_fig.png",
          plot = asbestos_fig,
-         width = 7, height = 10, units = "in")
+         width = 7, height = 8, units = "in")
   
