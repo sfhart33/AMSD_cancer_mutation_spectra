@@ -1,6 +1,10 @@
 library(tidyverse)
+library(RColorBrewer)
+library(ggpubr)
+library(svglite)
 
 # load data
+  setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
   mouse_amsd_output <- readRDS("../outputs/mouse_amsd_output.rds")
   perms <- readRDS("../outputs/mouse_amsd_perms.rds")
   mexposuresig <- readRDS("../inputs/mouse_exposuresig.rds")
@@ -42,7 +46,7 @@ library(tidyverse)
     geom_hline(yintercept = BH_threshold, linetype = "dashed")+
     geom_text(aes(x=0.2, y = -log10(0.05)+0.1), label = "p=0.05")+
     geom_text(aes(x=0.2, y = BH_threshold + 0.1), label = "Benjamini-Hochberg FDR=0.05")+
-    geom_text(aes(x=0.2, y = -log10(0.05/nrow(mouse_amsd_output))+0.1), label = "Bonferroni FDR=0.05")+
+    geom_text(aes(x=0.2, y = -log10(0.05/nrow(mouse_amsd_output))+0.1), label = "Bonferroni FWER=0.05")+
     theme_classic()+
     theme(legend.position="top")+
     guides(
@@ -112,7 +116,11 @@ library(tidyverse)
     filter(tissue == "LIVER",
            exposure %in% c("SPONTANEOUS","TCP","OXAZEPAM"),
            name %in% sigs) %>%
+      mutate(exposure = recode(exposure,
+                               "SPONTANEOUS" = "Spontaneous",
+                               "OXAZEPAM" = "Oxazepam")) %>%
       ggplot(aes(x = as.numeric(rep), y = value, fill = name))+
+      scale_fill_brewer(palette = "Set2")+
       geom_col()+
       facet_grid(~ exposure, scales = "free_x", space = "free_x") +
       scale_x_continuous(breaks = seq(0,20,1)) +
@@ -122,15 +130,18 @@ library(tidyverse)
     guides(fill = guide_legend(title.position = "top"))+
     labs(x = "Tumor sample",
          y = "Signature fraction",
-         fill = "Signature")
+         fill = "Mutational signature")
   TCP_plot <- mexposuresig2 %>%
     filter(tissue == "LIVER",
            exposure %in% c("SPONTANEOUS","TCP"),
            name %in% sigs) %>%
+    mutate(exposure = recode(exposure,
+                           "SPONTANEOUS" = "Spontaneous")) %>%
+    mutate(exposure = factor(exposure, levels = c("TCP", "Spontaneous"))) %>%
     ggplot(aes(x = name, y = value, color = exposure))+
     geom_boxplot(outliers = FALSE)+
     geom_point(position=position_jitterdodge(jitter.width = 0.1))+
-    scale_color_manual(values = c("grey", "black"))+
+    scale_color_manual(values = c("black","grey"))+
     theme_classic()+
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
           legend.position="top",
@@ -143,10 +154,14 @@ library(tidyverse)
     filter(tissue == "LIVER",
            exposure %in% c("SPONTANEOUS","OXAZEPAM"),
            name %in% sigs) %>%
+    mutate(exposure = recode(exposure,
+                             "SPONTANEOUS" = "Spontaneous",
+                             "OXAZEPAM" = "Oxazepam")) %>%
+    mutate(exposure = factor(exposure, levels = c("Oxazepam", "Spontaneous"))) %>%
     ggplot(aes(x = name, y = value, color = exposure))+
     geom_boxplot(outliers = FALSE)+
     geom_point(position=position_jitterdodge(jitter.width = 0.1))+
-    scale_color_manual(values = c("black", "grey"))+
+    scale_color_manual(values = c("black","grey"))+
     theme_classic()+
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
           legend.position="top",
@@ -158,36 +173,37 @@ library(tidyverse)
   
 # spectra plots
 
-  samples <- pull(filter(sample_table, tissue == "LIVER", exposure == "SPONTANEOUS"), label)
-  spectra1 <- colMeans(mouse_carcinogen_spectra[samples,], na.rm=TRUE)
-  spectra1sd <- apply(mouse_carcinogen_spectra[samples,], 2, sd)
-
-  default_df <- readRDS("../inputs/default_spectrum_df.rds")
-  
-  default_df$spectra1 <- spectra1
-  default_df$spectra1sd <- spectra1sd
-  COLORS <- c("deepskyblue", "black", "firebrick2", "gray76", "darkolivegreen3", "rosybrown2")
-  
-  default_df %>%
-    ggplot(aes(x=trinuc, y = spectra1, fill = mut))+
-    geom_col()+
-    geom_errorbar(aes(ymin=spectra1-spectra1sd, ymax=spectra1+spectra1sd),
-                  width=.2,
-                  position=position_dodge(.9))+
-    scale_fill_manual(values = COLORS)+
-    scale_y_continuous(expand = c(0,0)) +
-    ylim(0,0.05)+
-    facet_grid(cols = vars(mut), scales = 'free')+
-    theme_bw()+
-    theme(
-      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 6),
-      panel.spacing = unit(0,'lines'),
-      strip.text = element_blank(),
-      aspect.ratio = 1.5,
-      panel.grid.major.x = element_blank()
-    )+
-    xlab("Trinucleotide context")+
-    ylab("Mutation fraction")
+  # samples <- pull(filter(sample_table, tissue == "LIVER", exposure == "SPONTANEOUS"), label)
+  # spectra1 <- colMeans(mouse_carcinogen_spectra[samples,], na.rm=TRUE)
+  # spectra1sd <- apply(mouse_carcinogen_spectra[samples,], 2, sd)
+  # 
+  # default_df <- readRDS("../inputs/default_spectrum_df.rds")
+  # 
+  # default_df$spectra1 <- spectra1
+  # default_df$spectra1sd <- spectra1sd
+  # COLORS <- c("deepskyblue", "black", "firebrick2", "gray76", "darkolivegreen3", "rosybrown2")
+  # COLORS <- c("steelblue", "gray40", "indianred", "gray60", "darkolivegreen4", "rosybrown")
+  # 
+  # default_df %>%
+  #   ggplot(aes(x=trinuc, y = spectra1, fill = mut))+
+  #   geom_col()+
+  #   geom_errorbar(aes(ymin=spectra1-spectra1sd, ymax=spectra1+spectra1sd),
+  #                 width=.2,
+  #                 position=position_dodge(.9))+
+  #   scale_fill_manual(values = COLORS)+
+  #   scale_y_continuous(expand = c(0,0)) +
+  #   ylim(0,0.05)+
+  #   facet_grid(cols = vars(mut), scales = 'free')+
+  #   theme_bw()+
+  #   theme(
+  #     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size = 6),
+  #     panel.spacing = unit(0,'lines'),
+  #     strip.text = element_blank(),
+  #     aspect.ratio = 1.5,
+  #     panel.grid.major.x = element_blank()
+  #   )+
+  #   xlab("Trinucleotide context")+
+  #   ylab("Mutation fraction")
   
   
   plot_mouse_spectra <- function(tis, exp){
@@ -200,6 +216,7 @@ library(tidyverse)
     default_df$spectra1 <- spectra1
     default_df$spectra1sd <- spectra1sd
     COLORS <- c("deepskyblue", "black", "firebrick2", "gray76", "darkolivegreen3", "rosybrown2")
+    COLORS <- c("steelblue", "gray40", "darkred", "gray60", "darkolivegreen4", "rosybrown")
     
     default_df %>%
       ggplot(aes(x=trinuc, y = spectra1, fill = mut))+
@@ -209,9 +226,9 @@ library(tidyverse)
                     position=position_dodge(.9))+
       scale_fill_manual(values = COLORS)+
       scale_y_continuous(expand = c(0,0)) +
-      #ylim(0,0.05)+
+      ylim(0,0.065)+
       facet_grid(cols = vars(mut), scales = 'free')+
-      theme_bw()+
+      theme_classic()+
       theme(
         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1, size=6),
         panel.spacing = unit(0,'lines'),
