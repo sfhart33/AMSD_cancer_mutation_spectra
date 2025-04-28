@@ -1,9 +1,8 @@
-# AMSD (Aggregate Mutation Spectrum Distance) method and code to accompany manuscript identifying carcinogen and ancestry effects on cancer mutation spectra
+# AMSD (Aggregate Mutation Spectrum Distance) method and code to accompany manuscript
 
-*Figure 1 from manuscript here to explain method*
+# AMSD overview
 
-
-
+![alt text](./outputs/Figure1_2025-04-28_AMSD)
 
 ## Table of Contents
 - [Installation](#installation)
@@ -68,5 +67,5 @@ All input data is from publically available datasets. If you used any of the res
 - TCGA ancestry calls from [Carrot-Zhang et al.](https://www.sciencedirect.com/science/article/pii/S1535610820302117?via%3Dihub)
 - TCGA mutation calls from [Ellrott et al.](https://www.sciencedirect.com/science/article/pii/S2405471218300966?via%3Dihub)
 
-Finally, if you build off the AMSD method for new applications, we recommend citing the origional method implementation, developed by [Sasani et al.](https://elifesciences.org/articles/89096).
+Finally, if you build off the AMSD method for new applications, we recommend citing the origional method implementation, developed by [Sasani et al.](https://elifesciences.org/articles/89096)
 
