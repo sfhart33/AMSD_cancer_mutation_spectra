@@ -2,7 +2,7 @@
 
 # AMSD overview
 
-![alt text](./outputs/Figure1_2025-04-28_AMSD)
+![AMSD method](outputs/Figure1_2025-04-28_AMSD.png)
 
 ## Table of Contents
 - [Installation](#installation)
