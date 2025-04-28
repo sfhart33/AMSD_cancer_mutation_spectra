@@ -4,6 +4,16 @@
 
 ![AMSD method](outputs/Figure1_2025-04-28_AMSD.png)
 
+- Given mutation spectra for each sample in a cohort divided into two groups (e.g. navy blue: unexposed to carcinogen, gold: exposed to carcinogen)...
+- AMSD aggregates mutation spectra for each group and calculates the cosine distance between the aggregate spectra (green).
+- AMSD also randomly reshuffles group labels to calculate the cosine distance between randomly sampled tumors (grey), repeating 1000+ times to create a null distribution expectation.
+- AMSD then calculates a p-value from the fraction of random samplings that are greater than or equal to the observed distance between the two groups, as visualized in the histogram.
+- To interpret what mutational mechanisms may be behind a significant difference, we recommend applying mutational signature fitting to the aggregate spectra and/or individual samples and compared between the two groups.
+
+
+
+
+
 ## Table of Contents
 - [Installation](#installation)
 - [Usage](#usage)
@@ -13,9 +23,10 @@
 
 
 
+
 ## Installation
 
-**Not yet operation as an R package**
+**TO DO: Not yet operation as an R package**
 
 ```
 # install.packages("devtools")
@@ -31,7 +42,7 @@ This package was built and tested with R version 4.3.1. Internally, this package
 
 ## Usage
 
-
+**TO DO: Walk through example analysis from paper**
 
 
 ## Reproducing manuscript analysis
