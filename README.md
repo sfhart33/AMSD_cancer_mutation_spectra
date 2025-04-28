@@ -3,7 +3,7 @@
 ## Table of Contents
 - [Installation](#installation)
 - [Usage](#usage)
-- [Reproducing manuscript analysis](#reproducing)
+- [Reproducing manuscript analysis](#reproducing manuscript analysis)
 - [Citation](#citation)
 
 ## Installation
