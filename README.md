@@ -1,10 +1,20 @@
-# AMSD_cancer_mutation_spectra
-AMSD method and code to accompany manuscript identifying carcinogen and ancestry effects on mutation spectra
+# AMSD (Aggregate Mutation Spetrum Distance) method and code to accompany manuscript identifying carcinogen and ancestry effects on cancer mutation spectra
 
-To add:
-* AMSD function itself
-* Simulations
-* Mouse
-* Asbestos
-* TCGA
-* GWAS?
+## Table of Contents
+- [Installation](#installation)
+- [Usage](#usage)
+- [Reproducing manuscript analysis](#reproducing)
+- [Citation](#citation)
+
+## Installation
+
+### Prerequisites for AMSD
+- R
+- tidyverse
+
+## Usage
+
+## Reproducing manuscript analysis
+
+### Prerequisites for reproducing manuscript analysis
+- 
