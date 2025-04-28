@@ -1,6 +1,4 @@
-# AMSD (Aggregate Mutation Spectrum Distance) method and code to accompany manuscript
-
-# AMSD overview
+# AMSD (Aggregate Mutation Spectrum Distance) method to detect significant differences in mutation spectra between groups
 
 ![AMSD method](outputs/Figure1_2025-04-28_AMSD.png)
 
@@ -10,9 +8,7 @@
 - AMSD then calculates a p-value from the fraction of random samplings that are greater than or equal to the observed distance between the two groups, as visualized in the histogram.
 - To interpret what mutational mechanisms may be behind a significant difference, we recommend applying mutational signature fitting to the aggregate spectra and/or individual samples and compared between the two groups.
 
-
-
-
+<br/><br/>
 
 ## Table of Contents
 - [Installation](#installation)
@@ -20,7 +16,7 @@
 - [Reproducing manuscript analysis](#reproducing-manuscript-analysis)
 - [Citation](#citation)
 
-
+<br/>
 
 
 
@@ -37,7 +33,7 @@ install_github("sfhart33/AMSD_cancer_mutation_spectra")
 
 This package was built and tested with R version 4.3.1. Internally, this package uses tidyverse functions. Users do not need to load tidyverse separately; required functions are imported as needed.
 
-
+<br/>
 
 
 ## Usage
@@ -64,6 +60,8 @@ source("amsd_asbestos.R")            # Runs AMSD on mesothelioma grouped by prof
 source("amsd_tcga_ancestry.R")       # Runs AMSD on TCGA cancer types grouped by genetic ancestry 
 source("amsd_tcga_plotting.R")       # Plots the TCGA ancestry results
 ```
+
+<br/>
 
 ## Citation
 
