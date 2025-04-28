@@ -2,7 +2,7 @@ library(tidyverse)
 library(ggpubr)
 library(svglite)
 library(sigfit)
-#library(ggrepel)
+library(ggrepel)
 #library(ggbreak)
 data("cosmic_signatures_v3.2")
 setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
@@ -351,29 +351,38 @@ source("amsd_functions.R")
          height = 10,
          units = "in")
   supp_fig <- ggarrange(esophageal_plot,
+                        liver_plot,
+                        bladder_plot,
+                        lung_plot1,
                         uterine_plot1,
+                        lung_plot2,
+                        
+                        skin_plot,
+                        ovarian_plot2,
                         uterine_plot2,
+                        breast_plot1,
+                        head_plot1,
+                        bladder_plot2,
                         colorectal_plot,
                         colorectal_plot2,
-                        breast_plot1,
-                        breast_plot2,
                         uterine_plot3,
-                        ovarian_plot1,
+                        breast_plot2,
+                        lung_plot3,
                         head_plot2,
                         head_plot3,
-                        lung_plot3,
-                        nrow = 4,
-                        ncol = 3)
+                        ovarian_plot2,
+                        nrow = 5,
+                        ncol = 4)
   supp_fig
   ggsave("../outputs/Figure3_supp.png",
          plot = supp_fig,
          width = 7,
-         height = 11,
+         height = 8,
          units = "in")
   ggsave("../outputs/Figure3_supp.svg",
          plot = supp_fig,
          width = 7,
-         height = 11,
+         height = 8,
          units = "in")
   
 # Individual spectra plots
