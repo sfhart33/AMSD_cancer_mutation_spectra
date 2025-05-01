@@ -462,3 +462,101 @@ source("amsd_functions.R")
          height = 11,
          units = "in")
   
+  # estimate ratio of certain SBS exposures using proxy for fitting
+  pdf("../outputs/SBS_ratio_plots.pdf")
+  
+  counts <- filter(anc_spectra, tumor_type == "UCEC", anc3 %in% c("afr","eas","eur")) %>%
+    group_by(anc3) %>%
+    summarize(count = sum(C_A.TCT > 0.1), n = n())
+  filter(anc_spectra, tumor_type == "UCEC", anc3 %in% c("afr","eas","eur")) %>%
+    ggplot(aes(C_A.TCT)) +
+      geom_histogram()+
+    geom_label(data = counts,
+               aes(0.1,50,label = paste0(count,"/",n," = ",100*round(count/n, 2),"%")), hjust = 0)+
+    # geom_label(data = counts,
+    #            aes(0.1,50,label = round(count/n, 2)), hjust = 0)+
+    geom_vline(xintercept = 0.1)+
+    facet_wrap(~ anc3) + #, scales = "free")+
+    labs(title = "Uterine: TCT>TAT as a proxy for SBS10a",
+         x = "TCT>TAT (fraction of all mutations)",
+         y = "# of tumors")
+  
+  counts <- filter(anc_spectra, tumor_type %in% c("UCEC","COAD"), anc3 %in% c("afr","eas","eur")) %>%
+    group_by(tumor_type,anc3) %>%
+    summarize(count = sum(C_A.TCT > 0.1 & C_T.TCG > 0.1), n = n())
+  filter(anc_spectra, tumor_type %in% c("UCEC","COAD"), anc3 %in% c("afr","eas","eur")) %>%
+    ggplot(aes(C_A.TCT, C_T.TCG)) +
+    geom_point()+
+    geom_vline(xintercept = 0.1)+
+    geom_hline(yintercept = 0.1)+
+    geom_label(data = counts,
+               aes(0.2,0.1,label = paste0(count,"/",n," = ",100*round(count/n, 2),"%")), hjust = 0)+
+    facet_grid(rows = vars(anc3), cols = vars(tumor_type))+
+    labs(title = "TCT>TAT and TCG>TTG as proxies for SBS10a and SBS10b",
+         x = "TCT>TAT (fraction of all mutations)",
+         y = "TCG>TTG (fraction of all mutations)")
+  
+  counts <- filter(anc_spectra, tumor_type %in% c("ESCA","LIHC"), anc3 %in% c("eas","eur")) %>%
+    group_by(tumor_type,anc3) %>%
+    summarize(count = sum(T_C.ATA > 0.05), n = n())
+  filter(anc_spectra, tumor_type  %in% c("ESCA","LIHC"), anc3 %in% c("eas","eur")) %>%
+    ggplot(aes(T_C.ATA)) +
+    geom_histogram()+
+    geom_vline(xintercept = 0.05)+
+    geom_label(data = counts,
+               aes(0.05,25,label = paste0(count,"/",n," = ",100*round(count/n, 2),"%")), hjust = 0)+
+    facet_grid(rows = vars(anc3), cols = vars(tumor_type))+
+    labs(title = "ATA>ACA as proxy for SBS16",
+         x = "ATA>ACA (fraction of all mutations)",
+         y = "# of tumors")
+  
+  counts <- filter(anc_spectra, tumor_type %in% c("ESCA","LIHC"), anc3 %in% c("eas","eur")) %>%
+    group_by(tumor_type,anc3) %>%
+    summarize(count = sum(T_C.ATA+T_C.ATT+T_C.ATG > 0.1), n = n())
+  filter(anc_spectra, tumor_type  %in% c("ESCA","LIHC"), anc3 %in% c("eas","eur")) %>%
+    ggplot(aes(T_C.ATA+T_C.ATT+T_C.ATG)) +
+    geom_histogram()+
+    geom_vline(xintercept = 0.1)+
+    geom_label(data = counts,
+               aes(0.1,25,label = paste0(count,"/",n," = ",100*round(count/n, 2),"%")), hjust = 0)+
+    facet_grid(rows = vars(anc3), cols = vars(tumor_type))+
+  labs(title = "ATA>ACA, ATT>ACT, ATG>ACT as proxies for SBS16",
+       x = "ATA>ACA + ATT>ACT + ATG>ACT (fraction of all mutations)",
+       y = "# of tumors")
+  
+  counts <- filter(anc_spectra, tumor_type %in% c("STAD","ESCA"), anc3 %in% c("afr","eas","eur")) %>%
+    group_by(tumor_type,anc3) %>%
+    summarize(count = sum(T_G.CTT > 0.05), n = n())
+  filter(anc_spectra, tumor_type %in% c("STAD","ESCA"), anc3 %in% c("afr","eas","eur")) %>%
+    ggplot(aes(T_G.CTT)) +
+    geom_histogram()+
+    geom_vline(xintercept = 0.05)+
+    geom_label(data = counts,
+               aes(0.05,25,label = paste0(count,"/",n," = ",100*round(count/n, 2),"%")), hjust = 0)+
+    facet_grid(rows = vars(anc3), cols = vars(tumor_type))+
+    labs(title = "CTT>CGT as proxy for SBS17b",
+         x = "CTT>CGT(fraction of all mutations)",
+         y = "# of tumors")
+  
+  counts <- filter(anc_spectra, tumor_type %in% c("STAD","ESCA"), anc3 %in% c("afr","eas","eur")) %>%
+    group_by(tumor_type,anc3) %>%
+    summarize(count = sum(T_G.CTT+T_G.ATT+T_G.GTT+T_G.TTT > 0.1), n = n())
+  filter(anc_spectra, tumor_type %in% c("STAD","ESCA"), anc3 %in% c("afr","eas","eur")) %>%
+    ggplot(aes(T_G.CTT+T_G.ATT+T_G.GTT+T_G.TTT)) +
+    geom_histogram()+
+    geom_vline(xintercept = 0.1)+
+    geom_label(data = counts,
+               aes(0.1,25,label = paste0(count,"/",n," = ",100*round(count/n, 2),"%")), hjust = 0)+
+    facet_grid(rows = vars(anc3), cols = vars(tumor_type))+
+    labs(title = "ATT>CGT, CTT>CGT, GTT>GGT, TTT>TGT as proxy for SBS17b",
+         x = "ATT>CGT+CTT>CGT+GTT>GGT+TTT>TGT (fraction of all mutations)",
+         y = "# of tumors")
+  
+  # filter(anc_spectra, tumor_type %in% c("STAD","ESCA"), anc3 %in% c("afr","eas","eur")) %>%
+  #   ggplot(aes(T_G.CTT, (T_G.ATT+T_G.GTT+T_G.TTT))) +
+  #   geom_point()+
+  #   facet_grid(rows = vars(anc3), cols = vars(tumor_type))+
+  #   ggtitle("CTT>CGT and other trinucs as proxy for SBS17b")
+  dev.off()
+  # https://pmc.ncbi.nlm.nih.gov/articles/PMC10440845/
+  # The ethnic disparity of hematological toxicities are attributed to lower levels of dihydropyrimidine dehydrogenase (DPD), the rate‐limiting enzyme of 5‐FU catabolism, in peripheral blood mononuclear cells. 77 The prevalence of DPD deficiency has been shown to be 8.0% in African Americans, contrasted to only 2.8% among Caucasians. 
