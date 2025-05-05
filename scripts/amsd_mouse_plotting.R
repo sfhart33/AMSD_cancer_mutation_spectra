@@ -74,22 +74,29 @@ library(svglite)
     separate(name, into = c("tissue", "exposure"), sep = "\\.", remove = FALSE)
   quantiles <- group_by(perms2, tissue, exposure) %>%
     summarise(p0.05 = quantile(value, probs = 0.95),
-              FDR = quantile(value, probs = 1-(0.05/nrow(mouse_amsd_output))))
-  mouse_violin <- perms2 %>%
-    ggplot(aes(x = exposure, y = value))+
+              FDR = quantile(value, probs = 1-(0.05/nrow(mouse_amsd_output)))) %>%
+    full_join(mouse_amsd_output) %>%
+  mutate(significance = case_when(pvalues >= 0.05 ~ "ns",
+                                  pvalues < 0.05 & padj_BH > 0.05 ~ "p < 0.05",
+                                  padj_BH < 0.05 & pvalues > 0.05/29 ~ "p < 0.05 (B-H adj)",
+                                  pvalues < 0.05/29 ~ "p < 0.05 (Bonf adj)"))
+  perms3 <- left_join(perms2, quantiles) 
+  mouse_violin <- perms3 %>%
+    ggplot(aes(x = exposure, y = value, fill = significance))+
     geom_violin(adjust =0.5, scale = "width")+
     theme_classic()+
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
     xlab("")+
     ylab("Cosine distance")+
-    geom_point(data = mouse_amsd_output,
+    geom_point(#data = mouse_amsd_output,
                aes(x = exposure, y = cosines))+
-    geom_point(data = quantiles,
+    geom_point(#data = quantiles,
                aes(x = exposure, y = p0.05), shape = 95, size = 5)+
-    geom_point(data = quantiles,
-               aes(x = exposure, y = FDR), shape = 95, size = 5)+
-    facet_grid(rows = vars(tissue))
-  mouse_violin
+    # geom_point(data = quantiles,
+    #            aes(x = exposure, y = FDR), shape = 95, size = 5)+
+    facet_grid(rows = vars(tissue))+
+    scale_fill_manual(values=c("white", "grey", "grey66", "grey33"))
+  #mouse_violin
   ggsave("../outputs/mouse_amsd_output_violin.png",
          plot = mouse_violin)
   
@@ -359,9 +366,8 @@ library(svglite)
           axis.text.x=element_blank())
   liver7 <- plot_mouse_spectra("LIVER","FURAN")+
     ggtitle("FURAN")+
-    theme(strip.text = element_blank(),
-          axis.title.x=element_blank(),
-          axis.text.x=element_blank())
+    theme(strip.text = element_blank())+
+    xlab("Trinucleotide context")
   liver8 <- plot_mouse_spectra("LIVER","PRIMACLONE")+
     ggtitle("PRIMACLONE")+
     theme(strip.text = element_blank())+
@@ -373,9 +379,10 @@ library(svglite)
                            "ANTHRAQUINONE",
                            "BROMOCHLOROACETIC_ACID",
                            "CUMENE",
-                           "DE-71",
-                           "FURAN",
-                           "PRIMACLONE"),
+                           #"DE-71",
+                           "FURAN"#,
+                           #"PRIMACLONE"
+                           ),
            name %in% sigs) %>%
     ggplot(aes(x = name, y = value, color = exposure))+
     geom_boxplot(outliers = FALSE)+
@@ -388,26 +395,26 @@ library(svglite)
     labs(x = "Mutational signature",
          y = "Signature fraction",
          color = "Exposure")
-  liver_supp <- ggarrange(liver1,liver2,liver3,liver4,liver5,liver6,liver7,liver8,
-                          liver_plot, nrow=9, ncol=1, heights = c(0.125,0.1,0.1,0.1,0.1,0.1,0.1,0.125,0.45))
+  liver_supp <- ggarrange(liver1,liver2,liver3,liver4,liver5,liver7,#liver6,liver8,
+                          liver_plot, nrow=7, ncol=1, heights = c(0.125,0.1,0.1,0.1,0.1,0.125,0.45))
   liver_supp
   ggsave("../outputs/mouse_liver_supp.png",
          plot = liver_supp,
-         width = 12,
-         height = 16,
+         width = 9,
+         height = 12,
          units = "in")
   ggsave("../outputs/mouse_liver_supp.svg",
          plot = liver_supp,
-         width = 12,
-         height = 16,
+         width = 9,
+         height = 12,
          units = "in")
   ggsave("../outputs/mouse_lung_supp.png",
          plot = lung_supp,
-         width = 12,
-         height = 16,
+         width = 9,
+         height = 12,
          units = "in")
   ggsave("../outputs/mouse_lung_supp.svg",
          plot = lung_supp,
-         width = 12,
-         height = 16,
+         width = 9,
+         height = 12,
          units = "in")

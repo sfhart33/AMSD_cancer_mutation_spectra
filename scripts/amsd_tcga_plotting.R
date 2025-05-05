@@ -74,22 +74,30 @@ source("amsd_functions.R")
     separate(name, into = c("tissue", "comparison"), sep = "\\.", remove = FALSE)
   quantiles <- group_by(perms2, tissue, comparison) %>%
     summarise(p0.05 = quantile(value, probs = 0.95),
-              FDR = quantile(value, probs = 1-(0.05/nrow(ancestry_amsd_output))))
-  ancestry_violin <- perms2 %>%
-    ggplot(aes(x = tissue, y = value))+
+              FDR = quantile(value, probs = 1-(0.05/nrow(ancestry_amsd_output)))) %>%
+    rename(tumor_type = tissue) %>%
+    full_join(ancestry_amsd_output) %>%
+    mutate(significance = case_when(pvalues >= 0.05 ~ "ns",
+                                    pvalues < 0.05 & padj_BH > 0.05 ~ "p < 0.05",
+                                    padj_BH < 0.05 & pvalues > 0.05/29 ~ "p < 0.05 (B-H adj)",
+                                    pvalues < 0.05/29 ~ "p < 0.05 (Bonf adj)"))
+  perms3 <- perms2 %>% #[seq(1, nrow(perms2), by = 10), ] %>% 
+    rename(tumor_type = tissue) %>%
+    left_join(quantiles) # too big to plot with all 100k permutations each
+  ancestry_violin <- perms3 %>% 
+    ggplot(aes(x = tumor_type, y = value, fill = significance))+
     geom_violin(adjust =0.5, scale = "width")+
     theme_classic()+
     theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
     xlab("")+
     ylab("Cosine distance")+
-    geom_point(data = ancestry_amsd_output,
+    geom_point(#data = ancestry_amsd_output,
                aes(x = tumor_type, y = cosines))+
-    geom_point(data = quantiles,
-               aes(x = tissue, y = p0.05), shape = 95, size = 5)+
-    geom_point(data = quantiles,
-               aes(x = tissue, y = FDR), shape = 95, size = 5)+
-    facet_grid(rows = vars(comparison))
-  ancestry_violin
+    geom_point(#data = quantiles,
+               aes(x = tumor_type, y = p0.05), shape = 95, size = 5)+
+    facet_grid(rows = vars(comparison))+
+    scale_fill_manual(values=c("white", "grey80", "grey66", "grey33"))
+  # ancestry_violin
   ggsave("../outputs/ancestry_amsd_output_violin.png",
          plot = ancestry_violin)
   
