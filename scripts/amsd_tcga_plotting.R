@@ -378,7 +378,7 @@ source("amsd_functions.R")
                         lung_plot3,
                         head_plot2,
                         head_plot3,
-                        ovarian_plot2,
+                        ovarian_plot1,
                         nrow = 5,
                         ncol = 4)
   supp_fig
