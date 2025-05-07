@@ -80,7 +80,12 @@ source("amsd_functions.R")
     xlab("Sample count (same # exposed and non-exposed)")+
     ylab("Difference detected \n(p<0.05, fraction of 100 simulations)")+
     # ggtitle("AMSD strength of detection in \nWES (50 mu/sample) and WGS (2500 mu/sample)")+
-    theme_bw()
+    theme_classic()
   simulation_plot
   ggsave("../outputs/amsd_simulations.png",
-         plot = simulation_plot)
+         plot = simulation_plot,
+         width = 7,
+         height = 5,
+         units = "in"
+         )
+  

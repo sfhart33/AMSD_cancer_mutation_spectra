@@ -49,6 +49,7 @@ This package was built and tested with R version 4.3.1. Internally, this package
 *versions indicate those used for original analysis*
 - tidyverse     v2.0.0
 - ggpubr        v0.6.0   (for multi-panel plotting)
+- ggrepel       v0.9.6   (fir figure labels)
 - RColorBrewer  v1.1-3   (color palettes)
 - svglite       v2.1.3   (output scalable vector graphics)
 - sigfit        v2.2     (signature fitting tool)

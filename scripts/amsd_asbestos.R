@@ -1,6 +1,7 @@
 library(tidyverse)
 library(ggpubr)
-setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
+library(ggrepel)
+# setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
 source("amsd_functions.R")
 
 # load data
@@ -204,12 +205,12 @@ SV_matrix
              exp_sd = sapply(sigs_exp/rowSums(sigs_exp), sd)/sqrt(nrow(sigs_exp)),
              nonexp_sd = sapply(sigs_nonexp/rowSums(sigs_nonexp), sd)/sqrt(nrow(sigs_nonexp))) %>%
     rownames_to_column(var = "Signature") %>%
-    ggplot(aes(exp,nonexp, label = rownames(sigs_comp)))+
+    ggplot(aes(exp,nonexp, label = Signature))+
     geom_point(size = 0.25)+
     geom_pointrange(aes(xmin = exp-exp_sd, xmax = exp+exp_sd), size = 0.25)+
     geom_pointrange(aes(ymin = nonexp-nonexp_sd, ymax = nonexp+nonexp_sd), size = 0.25)+
     geom_abline(intercept = 0, slope = 1)+
-    geom_text(check_overlap = TRUE)+
+    geom_label_repel()+
     theme_classic()+
     labs(title= "CNV signatures, means,\nwith outliers",
          x = "Prof. exposed to asbestos",
@@ -221,12 +222,12 @@ SV_matrix
              exp_sd = sapply(sigs_exp, sd)/sqrt(nrow(sigs_exp)),
              nonexp_sd = sapply(sigs_nonexp, sd)/sqrt(nrow( sigs_nonexp))) %>%
     rownames_to_column(var = "Signature") %>%
-    ggplot(aes(exp,nonexp, label = rownames(sigs_comp)))+
+    ggplot(aes(exp,nonexp, label = Signature))+
     geom_point(size = 0.25)+
     geom_pointrange(aes(xmin = exp-exp_sd, xmax = exp+exp_sd), size = 0.25)+
     geom_pointrange(aes(ymin = nonexp-nonexp_sd, ymax = nonexp+nonexp_sd), size = 0.25)+
     geom_abline(intercept = 0, slope = 1)+
-    geom_text(check_overlap = TRUE)+
+    geom_label_repel()+
     theme_classic()+
     labs(title= "CNV signatures, sums,\nwith outliers",
          x = "Prof. exposed to asbestos",
@@ -238,12 +239,12 @@ SV_matrix
              exp_sd = sapply(sigs_exp, sd)/sqrt(nrow(sigs_exp)),
              nonexp_sd = sapply(sigs_nonexp_no_outlier, sd)/sqrt(nrow(sigs_nonexp_no_outlier)))  %>%
     rownames_to_column(var = "Signature") %>%
-    ggplot(aes(exp,nonexp, label = rownames(sigs_comp)))+
+    ggplot(aes(exp,nonexp, label = Signature))+
     geom_point(size = 0.25)+
     geom_pointrange(aes(xmin = exp-exp_sd, xmax = exp+exp_sd), size = 0.25)+
     geom_pointrange(aes(ymin = nonexp-nonexp_sd, ymax = nonexp+nonexp_sd), size = 0.25)+
     geom_abline(intercept = 0, slope = 1)+
-    geom_text(check_overlap = TRUE)+
+    geom_label_repel()+
     theme_classic()+
     labs(title= "CNV signatures, sums,\nno outliers",
          x = "Prof. exposed to asbestos",
@@ -252,19 +253,19 @@ SV_matrix
 # plots
   p1 <- plot_amsd_histogram(amsd_output_sbs_mean) +
     ggtitle("SBS spectra, means") +
-    geom_label(x = amsd_output_sbs_mean$cosine, y = 1000, label = paste0("p=",amsd_output_sbs_mean$p), angle=90, hjust = 0)
+    geom_label(x = amsd_output_sbs_mean$cosine, y = 1000, label = paste0("p=",amsd_output_sbs_mean$p), hjust = 0)
   p2 <- plot_amsd_histogram(amsd_output_sbs_sum) +
     ggtitle("SBS spectra, sums") +
-    geom_label(x = amsd_output_sbs_sum$cosine, y = 1000, label = paste0("p=",amsd_output_sbs_sum$p), angle=90, hjust = 0)
+    geom_label(x = amsd_output_sbs_sum$cosine, y = 1000, label = paste0("p=",amsd_output_sbs_sum$p), hjust = 0)
   p3 <- plot_amsd_histogram(amsd_output_cnv_mean) +
     ggtitle("CNV spectra, means") +
-    geom_label(x = amsd_output_cnv_mean$cosine, y = 1000, label = paste0("p=",amsd_output_cnv_mean$p), angle=90, hjust = 0)
+    geom_label(x = amsd_output_cnv_mean$cosine, y = 1000, label = paste0("p=",amsd_output_cnv_mean$p), hjust = 0)
   p4 <- plot_amsd_histogram(amsd_output_cnv_sum) +
     ggtitle("CNV spectra, sums") +
-    geom_label(x = amsd_output_cnv_sum$cosine, y = 1000, label = paste0("p=",amsd_output_cnv_sum$p), angle=90)
+    geom_label(x = amsd_output_cnv_sum$cosine, y = 1000, label = paste0("p=",amsd_output_cnv_sum$p))
   p5 <- plot_amsd_histogram(amsd_output_cnv_sum2) +
     ggtitle("CNV spectra, sums,\nno outliers") +
-    geom_label(x = amsd_output_cnv_sum2$cosine, y = 1000, label = paste0("p=",amsd_output_cnv_sum2$p), angle=90, hjust = 0)
+    geom_label(x = amsd_output_cnv_sum2$cosine, y = 1000, label = paste0("p=",amsd_output_cnv_sum2$p), hjust = 0)
 
   
   
