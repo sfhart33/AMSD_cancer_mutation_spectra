@@ -4,7 +4,7 @@
 
 ## Table of Contents
 - [Installation](#installation)
-- - [Reproducing manuscript analysis](#reproducing-manuscript-analysis)
+- [Reproducing manuscript analysis](#reproducing-manuscript-analysis)
 - [Usage](#usage)
 - [Citation](#citation)
 
@@ -49,8 +49,6 @@ source("amsd_tcga_plotting.R")       # Plots the TCGA ancestry results
 ## Usage
 
 See example analysis in the [mutspecdist README](https://github.com/sfhart33/mutspecdist) for how to run AMSD on your own data
-
-<br/>
 
 ![AMSD method](outputs/Figure1_2025-04-29.png)
 
