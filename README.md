@@ -24,23 +24,20 @@
 
 ## Installation
 
-**TO DO: Not yet operation as an R package**
+Install package "[mutspecdist](https://github.com/sfhart33/mutspecdist)" to run AMSD
 
 ```
 # install.packages("devtools")
 # library(devtools)
 
-install_github("sfhart33/AMSD_cancer_mutation_spectra")
+devtools::install_github("sfhart33/mutspecdist")
 ```
-
-This package was built and tested with R version 4.3.1. Internally, this package uses tidyverse functions. Users do not need to load tidyverse separately; required functions are imported as needed.
 
 <br/>
 
-
 ## Usage
 
-**TO DO: Walk through example analysis from paper**
+See example analysis in the [mutspecdist README](https://github.com/sfhart33/mutspecdist) for how to run AMSD on your own data
 
 
 ## Reproducing manuscript analysis
