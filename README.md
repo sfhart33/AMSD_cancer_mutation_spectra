@@ -1,7 +1,5 @@
 # Code to accompany manuscript: *A signature-agnostic test for differences between tumor mutation spectra reveals carcinogen and ancestry effects*
 
-<br/>
-
 ## Table of Contents
 - [Installation](#installation)
 - [Reproducing manuscript analysis](#reproducing-manuscript-analysis)
