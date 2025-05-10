@@ -1,6 +1,51 @@
-# AMSD (Aggregate Mutation Spectrum Distance) method to detect significant differences in mutation spectra
+# Code to accompany manuscript: *A signature-agnostic test for differences between tumor mutation spectra reveals carcinogen and ancestry effects*
+
+- [Installation](#installation)
+- [Reproducing manuscript analysis](#reproducing-manuscript-analysis)
+- [Usage](#usage)
+- [Citation](#citation)
 
 <br/>
+
+## Installation
+
+Install package "[mutspecdist](https://github.com/sfhart33/mutspecdist)" to run AMSD
+
+```
+# install.packages("devtools")
+# library(devtools)
+
+devtools::install_github("sfhart33/mutspecdist")
+```
+
+<br/>
+
+## Reproducing manuscript analysis
+
+### Dependencies
+*versions indicate those used for original analysis*
+- tidyverse     v2.0.0
+- ggpubr        v0.6.0   (for multi-panel plotting)
+- ggrepel       v0.9.6   (for figure labels)
+- RColorBrewer  v1.1-3   (color palettes)
+- svglite       v2.1.3   (output scalable vector graphics)
+- sigfit        v2.2     (signature fitting tool)
+
+### Run scripts to generate figures
+```
+source("amsd_simulations.R")         # Generates simulations from Supp Fig 1
+source("amsd_mouse_carcinogens.R")   # Runs AMSD on mouse tumors grouped by carcinogen exposure
+source("amsd_mouse_plotting.R")      # Plots the mouse carcinogen results
+source("amsd_asbestos.R")            # Runs AMSD on mesothelioma grouped by professional asbestos exposure and plots results
+source("amsd_tcga_ancestry.R")       # Runs AMSD on TCGA cancer types grouped by genetic ancestry 
+source("amsd_tcga_plotting.R")       # Plots the TCGA ancestry results
+```
+
+<br/>
+
+## Usage
+
+See example analysis in the [mutspecdist README](https://github.com/sfhart33/mutspecdist) for how to run AMSD on your own data
 
 ![AMSD method](outputs/Figure1_2025-04-29.png)
 
@@ -12,65 +57,11 @@
 
 <br/>
 
-## Table of Contents
-- [Installation](#installation)
-- [Usage](#usage)
-- [Reproducing manuscript analysis](#reproducing-manuscript-analysis)
-- [Citation](#citation)
-
-<br/>
-
-
-
-## Installation
-
-**TO DO: Not yet operation as an R package**
-
-```
-# install.packages("devtools")
-# library(devtools)
-
-install_github("sfhart33/AMSD_cancer_mutation_spectra")
-```
-
-This package was built and tested with R version 4.3.1. Internally, this package uses tidyverse functions. Users do not need to load tidyverse separately; required functions are imported as needed.
-
-<br/>
-
-
-## Usage
-
-**TO DO: Walk through example analysis from paper**
-
-
-## Reproducing manuscript analysis
-
-### Dependencies
-*versions indicate those used for original analysis*
-- tidyverse     v2.0.0
-- ggpubr        v0.6.0   (for multi-panel plotting)
-- ggrepel       v0.9.6   (fir figure labels)
-- RColorBrewer  v1.1-3   (color palettes)
-- svglite       v2.1.3   (output scalable vector graphics)
-- sigfit        v2.2     (signature fitting tool)
-
-### Run scripts to generate figures
-```
-source("amsd_simulations.R")         # Generates simulations from Supp Fig 1
-source("amsd_mouse_carcinogens.R")   # Runs AMSD on mouse tumors grouped by carcinogen exposure
-source("amsd_mouse_plotting.R")      # Plots the mouse carcinogen results
-source("amsd_asbestos.R")            # Runs AMSD on mesothelioma grouped by professional asbestos exposure
-source("amsd_tcga_ancestry.R")       # Runs AMSD on TCGA cancer types grouped by genetic ancestry 
-source("amsd_tcga_plotting.R")       # Plots the TCGA ancestry results
-```
-
-<br/>
-
 ## Citation
 
 If you use this R package or results for your own research, please use the following citation:
 
-- *Not yet posted or published... coming soon*
+- Hart S.F.M., Alcala N., Feder A.F., Harris K. (under review) *A signature-agnostic test for differences between tumor mutation spectra reveals carcinogen and ancestry effects*.
 
 All input data is from publically available datasets. If you used any of the results, we also recommend citing the cooresponding data source:
 
