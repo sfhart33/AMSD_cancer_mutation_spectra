@@ -99,7 +99,7 @@ SV_matrix
   
   counts_exp <- total_cnv %>%
     filter(sample %in% samples_exp) %>%
-    mutate(exp = "abs-exposed")
+    mutate(exp = "asb-exposed")
   
   counts_nonexp <- total_cnv %>%
     filter(sample %in% samples_nonexp) %>%
