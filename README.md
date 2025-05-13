@@ -9,12 +9,17 @@
 
 ## Installation
 
-Install package "[mutspecdist](https://github.com/sfhart33/mutspecdist)" to run AMSD
+Clone project repo
 
+```bash
+git clone https://github.com/sfhart33/AMSD_cancer_mutation_spectra.git
 ```
-# install.packages("devtools")
-# library(devtools)
 
+Install R package "[mutspecdist](https://github.com/sfhart33/mutspecdist)" to run AMSD
+
+```R
+# install.packages("devtools")
+library(devtools)
 devtools::install_github("sfhart33/mutspecdist")
 ```
 
@@ -31,8 +36,14 @@ devtools::install_github("sfhart33/mutspecdist")
 - svglite       v2.1.3   (output scalable vector graphics)
 - sigfit        v2.2     (signature fitting tool)
 
-### Run scripts to generate figures
+```R
+install.packages(c("tidyverse","ggpubr","ggrepel","RColorBrewer","svglite"))
+devtools::install_github("kgori/sigfit")
 ```
+
+### Run scripts to generate figures
+```R
+setwd("./AMSD_cancer_mutation_spectra/scripts")
 source("amsd_simulations.R")         # Generates simulations from Supp Fig 1
 source("amsd_mouse_carcinogens.R")   # Runs AMSD on mouse tumors grouped by carcinogen exposure
 source("amsd_mouse_plotting.R")      # Plots the mouse carcinogen results

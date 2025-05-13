@@ -1,6 +1,8 @@
 library(tidyverse)
-setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
-source("amsd_functions.R")
+# setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
+# source("amsd_functions.R")
+library(mutspecdist)
+
 
 # load data from mouse paper (processed into spectra)
   mouse_carcinogen_counts <- readRDS("../inputs/mouse_carcinogen_spectra.rds") # counts

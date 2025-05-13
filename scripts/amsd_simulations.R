@@ -1,8 +1,9 @@
 library(tidyverse)
 library(sigfit)
   data("cosmic_signatures_v3.2")
-setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
-source("amsd_functions.R")
+# setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
+# source("amsd_functions.R")
+library(mutspecdist)
 
   
   

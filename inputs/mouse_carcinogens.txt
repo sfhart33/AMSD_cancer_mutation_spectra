@@ -1,0 +1,21 @@
+Chemicals	Administration route	IARC Classification	NTP Bioassay Result**	Ames Test**
+ANTIMONY TRIOXIDE	Inhalation	2B	Clear evidence	Negative
+ISOBUTYL NITRITE	Inhalation	2B	Some evidence	Positive
+COBALT METAL	Inhalation	2B	Clear evidence	Positive
+NICKEL OXIDE	Inhalation	1	Equivocal evidence	N/A
+NICKEL SUBSULFIDE	Inhalation	1	No Evidence	Equivocal
+NICKEL SULFATE HEXAHYDRATE	Inhalation	1	No Evidence	N/A
+SODIUM TUNGSTATE DIHYDRATE	Drinking water	N/A	In progress	Negative
+VANADIUM PENTOXIDE	Inhalation	2B	Clear evidence	Negative
+VINYLIDENE CHLORIDE	Inhalation	2B	Clear evidence	Negative
+"1,2,3-TRICHLOROPROPANE"	Gavage	2A	Clear evidence	Positive
+ANTHRAQUINONE	Feed	2B	Clear evidence	Negative
+BROMOCHLOROACETIC ACID	Drinking water	2B	Clear evidence	Positive
+CUMENE	Inhalation	2B	Clear evidence	Negative
+DIETHANOLAMINE	Topical application	2B	Clear evidence	Negative
+FURAN	Gavage	2B	Clear evidence	Negative
+GINKGO BILOBA EXTRACT	Gavage	2B	Clear evidence	Positive
+OXAZEPAM	Feed	2B	Clear evidence	Negative
+INDIUM PHOSPHIDE	Inhalation	2A	Clear evidence	N/A
+DE-71	Gavage	N/A	Clear evidence	Negative
+PRIMACLONE	Feed	2B	Clear evidence	Positive

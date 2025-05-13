@@ -4,7 +4,7 @@ library(ggpubr)
 library(svglite)
 
 # load data
-  setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
+  # setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
   mouse_amsd_output <- readRDS("../outputs/mouse_amsd_output.rds")
   perms <- readRDS("../outputs/mouse_amsd_perms.rds")
   mexposuresig <- readRDS("../inputs/mouse_exposuresig.rds")

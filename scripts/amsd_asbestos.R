@@ -2,7 +2,8 @@ library(tidyverse)
 library(ggpubr)
 library(ggrepel)
 # setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
-source("amsd_functions.R")
+# source("amsd_functions.R")
+library(mutspecdist)
 
 # load data
   samples <- read.table("../inputs/asbestos_sample_data.tsv", sep = "\t", header = TRUE)
