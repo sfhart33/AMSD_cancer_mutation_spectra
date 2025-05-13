@@ -11,13 +11,13 @@
 
 Clone project repo
 
-```bash
+```sh
 git clone https://github.com/sfhart33/AMSD_cancer_mutation_spectra.git
 ```
 
 Install R package "[mutspecdist](https://github.com/sfhart33/mutspecdist)" to run AMSD
 
-```R
+```r
 # install.packages("devtools")
 library(devtools)
 devtools::install_github("sfhart33/mutspecdist")
@@ -36,13 +36,13 @@ devtools::install_github("sfhart33/mutspecdist")
 - svglite       v2.1.3   (output scalable vector graphics)
 - sigfit        v2.2     (signature fitting tool)
 
-```R
+```r
 install.packages(c("tidyverse","ggpubr","ggrepel","RColorBrewer","svglite"))
 devtools::install_github("kgori/sigfit")
 ```
 
 ### Run scripts to generate figures
-```R
+```r
 setwd("./AMSD_cancer_mutation_spectra/scripts")
 source("amsd_simulations.R")         # Generates simulations from Supp Fig 1
 source("amsd_mouse_carcinogens.R")   # Runs AMSD on mouse tumors grouped by carcinogen exposure
@@ -58,7 +58,7 @@ source("amsd_tcga_plotting.R")       # Plots the TCGA ancestry results
 
 See example analysis in the [mutspecdist README](https://github.com/sfhart33/mutspecdist) for how to run AMSD on your own data
 
-![AMSD method](outputs/Figure1_2025-04-29.png)
+![AMSD method](outputs/figures_versions/Figure1_2025-04-29.png)
 
 - Input mutation spectra for each sample in a cohort divided into two groups. As an example here we have a group of tumors unexposed (blue) or exposed (gold) to carcinogen.
 - AMSD aggregates mutation spectra for each group and calculates the cosine distance between the aggregate spectra (green).
