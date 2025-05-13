@@ -28,6 +28,12 @@ devtools::install_github("sfhart33/mutspecdist")
 ## Reproducing manuscript analysis
 
 ### Dependencies
+
+```r
+install.packages(c("tidyverse","ggpubr","ggrepel","RColorBrewer","svglite"))
+devtools::install_github("kgori/sigfit")
+```
+
 *versions indicate those used for original analysis*
 - tidyverse     v2.0.0
 - ggpubr        v0.6.0   (for multi-panel plotting)
@@ -35,11 +41,6 @@ devtools::install_github("sfhart33/mutspecdist")
 - RColorBrewer  v1.1-3   (color palettes)
 - svglite       v2.1.3   (output scalable vector graphics)
 - sigfit        v2.2     (signature fitting tool)
-
-```r
-install.packages(c("tidyverse","ggpubr","ggrepel","RColorBrewer","svglite"))
-devtools::install_github("kgori/sigfit")
-```
 
 ### Run scripts to generate figures
 
