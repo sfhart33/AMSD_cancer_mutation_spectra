@@ -42,15 +42,39 @@ devtools::install_github("kgori/sigfit")
 ```
 
 ### Run scripts to generate figures
+
+In R:
 ```r
 setwd("./AMSD_cancer_mutation_spectra/scripts")
-source("amsd_simulations.R")         # Generates simulations from Supp Fig 1
-source("amsd_mouse_carcinogens.R")   # Runs AMSD on mouse tumors grouped by carcinogen exposure
-source("amsd_mouse_plotting.R")      # Plots the mouse carcinogen results
-source("amsd_asbestos.R")            # Runs AMSD on mesothelioma grouped by professional asbestos exposure and plots results
-source("amsd_tcga_ancestry.R")       # Runs AMSD on TCGA cancer types grouped by genetic ancestry 
-source("amsd_tcga_plotting.R")       # Plots the TCGA ancestry results
+
+# Generates simulations from Supp Fig 1
+     source("amsd_simulations.R")   
+# Runs AMSD on mouse tumors grouped by carcinogen exposure
+     source("amsd_mouse_carcinogens.R")   
+     source("amsd_mouse_plotting.R")
+# Runs AMSD on mesothelioma grouped by professional asbestos exposure and plots results
+     source("amsd_asbestos.R")  
+# Runs AMSD on TCGA cancer types grouped by genetic ancestry
+     source("amsd_tcga_ancestry.R")        
+     source("amsd_tcga_plotting.R")
 ```
+
+From the command line:
+```sh
+cd ./AMSD_cancer_mutation_spectra/scripts
+
+# Generates simulations from Supp Fig 1
+     Rscript amsd_simulations.R
+# Runs AMSD on mouse tumors grouped by carcinogen exposure
+     Rscript amsd_mouse_carcinogens.R   
+     Rscript amsd_mouse_plotting.R
+# Runs AMSD on mesothelioma grouped by professional asbestos exposure and plots results
+     Rscript amsd_asbestos.R
+# Runs AMSD on TCGA cancer types grouped by genetic ancestry
+     Rscript amsd_tcga_ancestry.R      
+     Rscript amsd_tcga_plotting.R
+```
+
 
 <br/>
 
