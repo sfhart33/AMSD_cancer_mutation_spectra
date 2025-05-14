@@ -34,8 +34,8 @@ devtools::document()
   usethis::use_news_md()
   usethis::use_citation()
   usethis::use_version("minor")  # e.g., bump to 0.2.0 before paper release
-
-  
+  usethis::use_git_tag("v0.2.0", message = "Release version 0.2.0")
+  usethis::git_push(tag = TRUE)
   
   
   # make a vignette
