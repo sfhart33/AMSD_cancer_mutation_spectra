@@ -24,12 +24,16 @@ devtools::document()
 # put on github
   usethis::use_git()
   usethis::use_github()
-
+  usethis::use_github_release()
+  usethis::use_mit_license("Samuel Hart")
   
-  
-  
-  
-  
+# Other things
+  usethis::use_testthat()
+  usethis::use_test("amsd")
+  usethis::use_github_action_check_standard()
+  usethis::use_news_md()
+  usethis::use_citation()
+  usethis::use_version("minor")  # e.g., bump to 0.2.0 before paper release
 
   
   
