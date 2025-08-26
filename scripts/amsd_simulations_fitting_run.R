@@ -1,8 +1,11 @@
 library(tidyverse)
 library(mutspecdist)
 library(SigProfilerAssignmentR)
-library(furrr)
-library(future)
+library(sigfit)
+data("cosmic_signatures_v3.2")
+# library(furrr)
+# library(future)
+setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
 
 #--- helper: convert sigfit-style spectra to SigProfiler SBS96 input
 convert_sigfit_to_SigProfiler <- function(sigfit_matrix) {
@@ -38,108 +41,6 @@ convert_sigfit_to_SigProfiler <- function(sigfit_matrix) {
   return(df)
 }
 
-# #--- main comparison function
-# compare_spectra_sigprofiler <- function(n_samples = 5,
-#                                         n_mutations = 50,
-#                                         sig_probs = c(SBS1 = 0.3, SBS5 = 0.6, SBS18 = 0.1),
-#                                         additional_sig = "SBS2",
-#                                         frac_extra = 0.05,
-#                                         n_sim = 1000,
-#                                         seed = 123,
-#                                         cosmic_version = 3.3,
-#                                         genome_build = "GRCh38") {
-#   set.seed(seed)
-#   
-#   # --- Simulate spectra ---
-#   no_exp <- simulate_spectra(n_samples, n_mutations, sig_probs, cosmic_signatures_v3.2)
-#   no_exp <- as.data.frame(do.call(rbind, no_exp))
-#   
-#   n_extra <- rep(n_mutations * frac_extra, n_samples)
-#   with_exp <- simulate_spectra(n_samples, n_mutations, sig_probs, cosmic_signatures_v3.2,
-#                                additional_sig = additional_sig, n_extra = n_extra)
-#   with_exp <- as.data.frame(do.call(rbind, with_exp))
-#   
-#   # --- Convert to SigProfiler input ---
-#   sp_no  <- convert_sigfit_to_SigProfiler(no_exp)
-#   sp_yes <- convert_sigfit_to_SigProfiler(with_exp)
-#   
-#   # --- Define output directories ---
-#   out_no  <- paste0("Assignment_no_", seed)
-#   out_yes <- paste0("Assignment_yes_", seed)
-#   
-#   # --- Fit with SigProfiler ---
-#   cosmic_fit(
-#     samples = sp_no,
-#     output = out_no,
-#     input_type = "matrix",
-#     context_type = "96",
-#     collapse_to_SBS96 = TRUE,
-#     cosmic_version = cosmic_version,
-#     genome_build = genome_build
-#   )
-#   
-#   cosmic_fit(
-#     samples = sp_yes,
-#     output = out_yes,
-#     input_type = "matrix",
-#     context_type = "96",
-#     collapse_to_SBS96 = TRUE,
-#     cosmic_version = cosmic_version,
-#     genome_build = genome_build
-#   )
-#   
-#   # --- Read exposures ---
-#   exp_no <- read.delim(file.path(out_no, "Assignment_Solution",
-#                                  "Activities", "Assignment_Solution_Activities.txt"),
-#                        header = TRUE, sep = "\t", check.names = FALSE)
-#   
-#   exp_yes <- read.delim(file.path(out_yes, "Assignment_Solution",
-#                                   "Activities", "Assignment_Solution_Activities.txt"),
-#                         header = TRUE, sep = "\t", check.names = FALSE)
-#   
-#   exp_no$group <- "A"
-#   exp_yes$group <- "B"
-#   df <- bind_rows(exp_no, exp_yes)
-#   
-#   # --- Cleanup output dirs ---
-#   unlink(out_no, recursive = TRUE)
-#   unlink(out_yes, recursive = TRUE)
-#   
-#   # --- Statistical tests ---
-#   results <- df %>%
-#     pivot_longer(
-#       cols = -c(Samples, group),   # <- explicitly exclude Samples and group
-#       names_to = "signature",
-#       values_to = "exposure"
-#     ) %>%
-#     group_by(signature) %>%
-#     summarise(
-#       mean_A = mean(exposure[group == "A"]),
-#       mean_B = mean(exposure[group == "B"]),
-#       p_ttest = t.test(exposure ~ group)$p.value,
-#       p_wilcox = wilcox.test(exposure ~ group)$p.value,
-#       .groups = "drop"
-#     ) %>%
-#     mutate(
-#       # Multiple testing corrections
-#       p_ttest_Bonf = p.adjust(p_ttest, "bonferroni"),
-#       p_ttest_BH   = p.adjust(p_ttest, "BH"),
-#       p_ttest_BY   = p.adjust(p_ttest, "BY"),
-#       p_wilcox_Bonf = p.adjust(p_wilcox, "bonferroni"),
-#       p_wilcox_BH   = p.adjust(p_wilcox, "BH"),
-#       n_samples = n_samples,
-#       n_mutations = n_mutations,
-#       additional_sig = additional_sig,
-#       frac_extra = frac_extra,
-#       seed = seed
-#     ) %>%
-#     arrange(p_ttest)
-#   
-#   list(
-#     results = results,
-#     exposures = df
-#   )
-# }
 #--- main comparison function
 compare_spectra_sigprofiler_top <- function(n_samples = 5,
                                         n_mutations = 50,
@@ -162,8 +63,8 @@ compare_spectra_sigprofiler_top <- function(n_samples = 5,
   if (n_extra > 0) {
     with_exp <- simulate_spectra(
       n_samples, n_mutations, sig_probs, cosmic_signatures_v3.2,
-      additional_sig = additional_sig,
-      n_extra = n_extra
+      additional_sig,
+      n_extra = rep(n_extra, n_samples)
     )
   } else {
     # When n_extra = 0, do NOT pass additional_sig or n_extra
@@ -260,117 +161,163 @@ compare_spectra_sigprofiler_top <- function(n_samples = 5,
   return(top_result)
 }
 
-# compare_spectra_sigprofiler()
-
 run_parameter_grid <- function(
     param_grid,
     n_reps = 5,
     output_file = "top_results.tsv"
 ) {
   all_results <- list()
-  
   run_id <- 1
-  
+
   for (i in seq_len(nrow(param_grid))) {
-    # Extract parameter set
     params <- param_grid[i, ]
-    
+
     for (rep in seq_len(n_reps)) {
       cat("Running param set", i, "rep", rep, "...\n")
-      
-      # Call your modified comparison function
+
+      # Handle seed safely
+      seed <- if (!is.null(params$seed)) {
+        as.integer(params$seed) + rep
+      } else {
+        as.integer(Sys.time()) %% .Machine$integer.max + rep
+      }
+
+      # Run comparison
       res <- compare_spectra_sigprofiler_top(
-        n_samples     = params$n_samples,
-        n_mutations   = params$n_mutations,
-        sig_probs     = eval(parse(text = params$sig_probs)),  # if stored as string
-        additional_sig= params$additional_sig,
-        frac_extra    = params$frac_extra,
-        n_sim         = params$n_sim,
-        seed          = as.integer(params$seed) + rep # vary seed per replicate
+        n_samples      = params$n_samples,
+        n_mutations    = params$n_mutations,
+        sig_probs      = eval(parse(text = params$sig_probs)),  # if string column
+        additional_sig = params$additional_sig,
+        frac_extra     = params$frac_extra,
+        n_sim          = params$n_sim %||% 1000,
+        seed           = seed
       )
-      
-      # Tag with metadata
-      res$top_result$replicate <- rep
-      res$top_result$param_set <- i
-      res$top_result$run_id    <- run_id
-      
-      all_results[[run_id]] <- res$top_result
+
+      # Tag metadata
+      res$replicate <- rep
+      res$param_set <- i
+      res$run_id    <- run_id
+
+      all_results[[run_id]] <- res
       run_id <- run_id + 1
     }
   }
-  
-  # Combine all into a single dataframe
+
   df_all <- bind_rows(all_results)
-  
-  # Save to file
   write.table(df_all, file = output_file, sep = "\t", quote = FALSE, row.names = FALSE)
-  
+
   return(df_all)
 }
 
-
-run_parameter_grid_parallel <- function(param_grid, n_reps = 5, output_file = "top_results.tsv") {
-  plan(multisession, workers = max(1, parallel::detectCores() - 1))
-  
-  tasks <- expand.grid(
-    i = seq_len(nrow(param_grid)),
-    rep = seq_len(n_reps),
-    KEEP.OUT.ATTRS = FALSE
-  )
-  
-  results <- future_map(
-    seq_len(nrow(tasks)),
-    function(task_id) {
-      tryCatch({
-        task <- tasks[task_id, ]
-        i <- task$i
-        rep <- task$rep
-        params <- param_grid[i, ]
-        
-        message("Running task ", task_id, 
-                " (param set ", i, ", rep ", rep, ")")
-        
-        res <- compare_spectra_sigprofiler_top(
-          n_samples     = params$n_samples,
-          n_mutations   = params$n_mutations,
-          sig_probs     = eval(parse(text = params$sig_probs)),
-          additional_sig= params$additional_sig,
-          frac_extra    = params$frac_extra,
-          n_sim         = params$n_sim,
-          seed          = as.integer(params$seed) + rep
-        )
-        
-        res$replicate <- rep
-        res$param_set <- i
-        res$run_id    <- task_id
-        res
-      },
-      error = function(e) {
-        message("❌ Error in task ", task_id, ": ", e$message)
-        return(NULL)
-      })
-    },
-    .progress = TRUE,
-    .options = furrr_options(seed = TRUE)
-  )
-  
-  df_all <- bind_rows(Filter(Negate(is.null), results))
-  write.table(df_all, file = output_file, sep = "\t", quote = FALSE, row.names = FALSE)
-  return(df_all)
-}
-
-
-# Define a parameter grid (as a data frame)
+# Example parameter grid
 param_grid <- expand.grid(
-  n_samples = c(10,10),
-  n_mutations = c(50,500),
-  sig_probs = c("c(SBS1 = 0.3, SBS5 = 0.6, SBS18 = 0.1)"),
-  additional_sig = c("SBS2", "SBS40"),
-  frac_extra = c(0.1,0.2),
-  n_sim = 1000,
-  seed = 123
+  frac_extra   = c(0.02, 0.05, 0.1, 0.2),
+  n_samples    = c(5, 25, 125, 625),
+  n_mutations  = c(50,2500),
+  sig_probs    = "sig_probs",     # string so eval(parse()) works
+  additional_sig = c("SBS40", "SBS2"),
+  n_sim        = 1000,
+  stringsAsFactors = FALSE
+)
+param_grid
+# Run with 2 replicates per parameter set
+results <- run_parameter_grid(
+  param_grid,
+  n_reps = 10,
+  output_file = "top_results.tsv"
 )
 
-# Run
-df_all <- run_parameter_grid_parallel(param_grid, n_reps = 3, output_file = "top_results.tsv")
-df_all
+# Show the results
+print(results)
+getwd()
+saveRDS(results, file = "top_results_simulations_sigprofiler.rds")
+
+
+# 
+# ############################
+# run_parameter_grid_batch <- function(
+#     param_grid,
+#     n_reps = 5,
+#     output_file = "top_results.tsv"
+# ) {
+#   all_results <- list()
+#   run_id <- 1
+#   
+#   for (i in seq_len(nrow(param_grid))) {
+#     params <- param_grid[i, ]
+#     cat("Preparing spectra for param set", i, "...\n")
+#     
+#     # ---- Convert fraction into number of extra mutations ----
+#     n_extra <- round(params$n_mutations * params$frac_extra)
+#     
+#     # ---- Step 1: simulate spectra for all replicates ----
+#     spectra_list <- lapply(seq_len(n_reps), function(rep) {
+#       simulate_spectra(
+#         n_sample      = params$n_samples,
+#         n_mutations   = params$n_mutations,
+#         sig_probs     = eval(parse(text = params$sig_probs)),
+#         additional_sig= params$additional_sig %||% "SBS2",
+#         n_extra       = n_extra,
+#         seed          = as.integer(Sys.time()) + rep
+#       )
+#     })
+#     
+#     # ---- Step 2: combine into one batch matrix ----
+#     batch_matrix <- do.call(cbind, spectra_list)
+#     
+#     # label columns as repX_sampleY
+#     colnames(batch_matrix) <- unlist(lapply(seq_along(spectra_list), function(rep) {
+#       paste0("rep", rep, "_s", seq_len(ncol(spectra_list[[rep]])))
+#     }))
+#     
+#     # ---- Step 3: call SigProfilerAssignment once ----
+#     py_batch <- reticulate::r_to_py(batch_matrix)
+#     
+#     py_run_string("
+# from SigProfilerAssignment import Analyzer as Analyze
+# ")
+#     
+#     res_py <- py$Analyze$cosmic_fit(
+#       project       = paste0('BatchRun_', i),
+#       samples       = py_batch,
+#       signatures    = "COSMIC",
+#       genome_build  = "GRCh38",
+#       context_type  = "96",
+#       make_plots    = FALSE
+#     )
+#     
+#     # ---- Step 4: collect results ----
+#     res_df <- as.data.frame(res_py)
+#     res_df$param_set <- i
+#     res_df$run_id <- run_id
+#     
+#     if ("sample" %in% names(res_df)) {
+#       res_df <- res_df %>%
+#         dplyr::mutate(
+#           replicate = as.integer(sub("rep([0-9]+)_.*", "\\1", sample)),
+#           sample_id = sample
+#         )
+#     }
+#     
+#     all_results[[i]] <- res_df
+#     run_id <- run_id + 1
+#   }
+#   
+#   df_all <- dplyr::bind_rows(all_results)
+#   write.table(df_all, file = output_file, sep = "\t", quote = FALSE, row.names = FALSE)
+#   
+#   return(df_all)
+# }
+# 
+# 
+# # Run with 5 replicates per parameter set
+# param_grid
+# 
+# results <- run_parameter_grid_batch(
+#   param_grid,
+#   n_reps = 5,
+#   output_file = "top_results.tsv"
+# )
+# 
+# # Show the results
+# print(results)

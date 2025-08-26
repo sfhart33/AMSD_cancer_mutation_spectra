@@ -5,7 +5,8 @@ library(parallel)
 data("cosmic_signatures_v3.2")
 library(mutspecdist)
 library(reticulate)
-use_python("C:/Users/sfhar/AppData/Local/Programs/Python/Python313/python.exe", required = TRUE)
+# For home computer
+  # use_python("C:/Users/sfhar/AppData/Local/Programs/Python/Python313/python.exe", required = TRUE)
 library(SigProfilerAssignmentR)
 
 n_samples = 125
