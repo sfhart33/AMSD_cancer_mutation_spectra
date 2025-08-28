@@ -233,91 +233,41 @@ getwd()
 saveRDS(results, file = "top_results_simulations_sigprofiler.rds")
 
 
-# 
-# ############################
-# run_parameter_grid_batch <- function(
-#     param_grid,
-#     n_reps = 5,
-#     output_file = "top_results.tsv"
-# ) {
-#   all_results <- list()
-#   run_id <- 1
-#   
-#   for (i in seq_len(nrow(param_grid))) {
-#     params <- param_grid[i, ]
-#     cat("Preparing spectra for param set", i, "...\n")
-#     
-#     # ---- Convert fraction into number of extra mutations ----
-#     n_extra <- round(params$n_mutations * params$frac_extra)
-#     
-#     # ---- Step 1: simulate spectra for all replicates ----
-#     spectra_list <- lapply(seq_len(n_reps), function(rep) {
-#       simulate_spectra(
-#         n_sample      = params$n_samples,
-#         n_mutations   = params$n_mutations,
-#         sig_probs     = eval(parse(text = params$sig_probs)),
-#         additional_sig= params$additional_sig %||% "SBS2",
-#         n_extra       = n_extra,
-#         seed          = as.integer(Sys.time()) + rep
-#       )
-#     })
-#     
-#     # ---- Step 2: combine into one batch matrix ----
-#     batch_matrix <- do.call(cbind, spectra_list)
-#     
-#     # label columns as repX_sampleY
-#     colnames(batch_matrix) <- unlist(lapply(seq_along(spectra_list), function(rep) {
-#       paste0("rep", rep, "_s", seq_len(ncol(spectra_list[[rep]])))
-#     }))
-#     
-#     # ---- Step 3: call SigProfilerAssignment once ----
-#     py_batch <- reticulate::r_to_py(batch_matrix)
-#     
-#     py_run_string("
-# from SigProfilerAssignment import Analyzer as Analyze
-# ")
-#     
-#     res_py <- py$Analyze$cosmic_fit(
-#       project       = paste0('BatchRun_', i),
-#       samples       = py_batch,
-#       signatures    = "COSMIC",
-#       genome_build  = "GRCh38",
-#       context_type  = "96",
-#       make_plots    = FALSE
-#     )
-#     
-#     # ---- Step 4: collect results ----
-#     res_df <- as.data.frame(res_py)
-#     res_df$param_set <- i
-#     res_df$run_id <- run_id
-#     
-#     if ("sample" %in% names(res_df)) {
-#       res_df <- res_df %>%
-#         dplyr::mutate(
-#           replicate = as.integer(sub("rep([0-9]+)_.*", "\\1", sample)),
-#           sample_id = sample
-#         )
-#     }
-#     
-#     all_results[[i]] <- res_df
-#     run_id <- run_id + 1
-#   }
-#   
-#   df_all <- dplyr::bind_rows(all_results)
-#   write.table(df_all, file = output_file, sep = "\t", quote = FALSE, row.names = FALSE)
-#   
-#   return(df_all)
-# }
-# 
-# 
-# # Run with 5 replicates per parameter set
-# param_grid
-# 
-# results <- run_parameter_grid_batch(
-#   param_grid,
-#   n_reps = 5,
-#   output_file = "top_results.tsv"
-# )
-# 
-# # Show the results
-# print(results)
+##########################
+#after running
+results_sigprof <- readRDS(file = "top_results_simulations_sigprofiler.rds")
+results_sigprof 
+
+output2 <- results_sigprof %>%
+  group_by(n_samples, n_mutations, additional_sig, frac_extra) %>%
+  summarize(success_amsd = sum(amsd_p <= 0.05)/n(),
+            success_ttest = sum(p_ttest <= 0.05)/n(),
+            success_wilcox = sum(p_wilcox <= 0.05)/n(),
+            success_ttestBonf = sum(p_ttest_Bonf <= 0.05)/n(),
+            success_wilcoxBonf = sum(p_wilcox_Bonf <= 0.05)/n(),
+            success_ttestBH = sum(p_ttest_BH <= 0.05)/n(),
+            success_wilcoxBH = sum(p_wilcox_BH <= 0.05)/n())
+output2
+
+simulation_plot <- function(input, test, title){
+  ggplot(input,
+         aes(x = factor(n_samples, levels = c("5","25","125","625")),
+             y = get(test),
+             color = factor(frac_extra, levels = c("0.02","0.05","0.1","0.2")),
+             group = factor(frac_extra, levels = c("0.02","0.05","0.1","0.2"))))+
+  geom_point()+
+  geom_line() +
+  facet_grid(n_mutations ~ additional_sig) +
+  guides(color = guide_legend(title = "Extra mutations per \nexposure sample (%)"))+
+  xlab("Sample count (same # exposed and non-exposed)")+
+  ylab("Difference detected \n(p<0.05, fraction of 100 simulations)")+
+  ggtitle(title)+
+  theme_classic()
+}
+simulation_plot(output2, "success_amsd", "Testing method: AMSD")
+simulation_plot(output2, "success_ttest", "Testing method: ttest")
+simulation_plot(output2, "success_wilcox", "Testing method: wilcox")
+simulation_plot(output2, "success_ttestBonf", "Testing method: ttest Bonf-corrected")
+simulation_plot(output2, "success_wilcoxBonf", "Testing method: wilcox Bonf-corrected")
+simulation_plot(output2, "success_ttestBH", "Testing method: ttest BH-corrected")
+simulation_plot(output2, "success_wilcoxBonf", "Testing method: wilcox BH-corrected")
