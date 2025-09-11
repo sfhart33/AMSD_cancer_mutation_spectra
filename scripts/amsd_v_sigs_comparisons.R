@@ -208,6 +208,7 @@ analyze_file <- function(file) {
   # 3. Run wilcox test for each SBS
   results <- map_dfr(sig_cols, function(sig) {
     test <- wilcox.test(dat[[sig]] ~ dat$ancestry)
+    #test <- t.test(dat[[sig]] ~ dat$ancestry)
     tibble(
       signature = sig,
       ancestry1 = ancestries[1],
@@ -243,7 +244,6 @@ top_hits <- all_results %>%
   slice_min(order_by = p_value, n = 1, with_ties = FALSE) %>%
   ungroup()
 
-top_hits
 full_join(ancestry_amsd_output, top_hits) %>%
   #filter(min_anc_n > 10) %>%
   #ggplot(aes(x = -log10(pvalues), y = -log10(p_value), color = comparison, label = tumor_type, size = min_anc_n))+
@@ -257,7 +257,6 @@ full_join(ancestry_amsd_output, top_hits) %>%
   xlab("AMSD p-value")+
   ylab("Top signature pvalue (wilcox)")
 
-full_join(ancestry_amsd_output, top_hits) 
 
 all_raw  %>%
   filter(tumor_type == "KIRP") %>% 
@@ -273,6 +272,35 @@ all_raw  %>%
   ggplot(aes(x=ancestry,y=SBS54, color = tumor_type))+
   geom_boxplot(outliers = FALSE)+
   geom_jitter(height = 0, width = 0.2, alpha = 0.6)
+all_raw  %>%
+  select(-file) %>%
+  unique() %>%
+  filter(tumor_type == "OV") %>%
+  ggplot(aes(x=ancestry,y=SBS38, color = tumor_type))+
+  geom_boxplot(outliers = FALSE)+
+  geom_jitter(height = 0, width = 0.2, alpha = 0.6)
+
+all_raw %>%
+  filter(tumor_type == "OV", ancestry == "eas") %>%
+  select(-file) %>%
+  distinct() %>%
+  # keep only SBS columns that are not all zeros
+  select(where(~ !all(. == 0))) %>%
+  pivot_longer(
+    cols = starts_with("SBS"),
+    names_to = "signature",
+    values_to = "exposure"
+  ) %>%
+  filter(signature %in% c("SBS38","SBS53","SBS49","SBS7c", "SBS89","SBS3","SBS39")) %>%
+  ggplot(aes(x = signature, y = exposure, color = sample_id)) +
+    geom_jitter(height = 0,width = 0.2) +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+# quick check
+all_raw_long %>%
+  filter(tumor_type == "OV", ancestry == "eas") %>%
+  head()
+
 
 plot_sig_volcano <- function(anc1, anc2, tumor){
   p <- filter(ancestry_amsd_output,
@@ -308,3 +336,28 @@ for(i in 1:nrow(ancestry_amsd_output)){
   print(plot1)
 }
 dev.off()
+
+###########################
+# load permutations
+ancestry_amsd_perms <- readRDS(file = "../outputs/ancestry_amsd_perms.rds")
+ancestry_amsd_perms
+ggplot(ancestry_amsd_perms, aes(SARC.eas_eur))+
+  geom_histogram()+
+  geom_vline(xintercept = ancestry_amsd_output[53,"cosines"])+
+  labs(title = "SARC: eas vs eur", x = "cosine distance",y = "permutation count")
+ggplot(ancestry_amsd_perms, aes(KIRP.eas_eur))+ 
+  geom_histogram()+
+  geom_vline(xintercept = ancestry_amsd_output[26,"cosines"])+
+  labs(title = "KIRP: eas vs eur", x = "cosine distance",y = "permutation count")
+ggplot(ancestry_amsd_perms, aes(OV.eas_eur))+ 
+  geom_histogram()+
+  geom_vline(xintercept = ancestry_amsd_output[42,"cosines"])+
+  labs(title = "OV: eas vs eur", x = "cosine distance",y = "permutation count")
+ggplot(ancestry_amsd_perms, aes(LUAD.afr_eas))+ 
+  geom_histogram()+
+  geom_vline(xintercept = ancestry_amsd_output[34,"cosines"])+
+  labs(title = "LUAD: afr vs eas", x = "cosine distance",y = "permutation count")
+ggplot(ancestry_amsd_perms, aes(UCEC.eas_eur))+ 
+  geom_histogram()+
+  geom_vline(xintercept = ancestry_amsd_output[66,"cosines"])+
+  labs(title = "UCEC: eas vs eur", x = "cosine distance",y = "permutation count")
