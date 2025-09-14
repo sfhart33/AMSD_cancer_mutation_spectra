@@ -1,11 +1,18 @@
 library(tidyverse)
 library(mutspecdist)
+library(reticulate)
+use_python("C:/Users/sfhar/AppData/Local/Programs/Python/Python313/python.exe", required = TRUE)
 library(SigProfilerAssignmentR)
 library(sigfit)
 data("cosmic_signatures_v3.2")
 # library(furrr)
 # library(future)
-setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
+#setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
+setwd("C:/Users/sfhar/AMSD_cancer_mutation_spectra/scripts")
+
+# load novel signature
+novel_sig <- read.delim("../inputs/Roerink2018_new_sig.csv", sep = ",", header = FALSE)$V2
+cosmic_signatures_v3.2_new <- rbind(cosmic_signatures_v3.2, SBSX = novel_sig)
 
 #--- helper: convert sigfit-style spectra to SigProfiler SBS96 input
 convert_sigfit_to_SigProfiler <- function(sigfit_matrix) {
@@ -55,21 +62,21 @@ compare_spectra_sigprofiler_top <- function(n_samples = 5,
   set.seed(seed)
   
   # --- Simulate spectra ---
-  no_exp <- simulate_spectra(n_samples, n_mutations, sig_probs, cosmic_signatures_v3.2)
+  no_exp <- simulate_spectra(n_samples, n_mutations, sig_probs, cosmic_signatures_v3.2_new)
   no_exp <- as.data.frame(do.call(rbind, no_exp))
   
   n_extra <- round(n_mutations * frac_extra)   # single number
   
   if (n_extra > 0) {
     with_exp <- simulate_spectra(
-      n_samples, n_mutations, sig_probs, cosmic_signatures_v3.2,
+      n_samples, n_mutations, sig_probs, cosmic_signatures_v3.2_new,
       additional_sig,
       n_extra = rep(n_extra, n_samples)
     )
   } else {
     # When n_extra = 0, do NOT pass additional_sig or n_extra
     with_exp <- simulate_spectra(
-      n_samples, n_mutations, sig_probs, cosmic_signatures_v3.2
+      n_samples, n_mutations, sig_probs, cosmic_signatures_v3.2_new
     )
   }
   with_exp <- as.data.frame(do.call(rbind, with_exp))
@@ -121,6 +128,33 @@ compare_spectra_sigprofiler_top <- function(n_samples = 5,
   unlink(out_yes, recursive = TRUE)
   
   # --- Statistical tests ---
+  # results <- df %>%
+  #   pivot_longer(
+  #     cols = -c(Samples, group),
+  #     names_to = "signature",
+  #     values_to = "exposure"
+  #   ) %>%
+  #   group_by(signature) %>%
+  #   summarise(
+  #     mean_A = mean(exposure[group == "A"]),
+  #     mean_B = mean(exposure[group == "B"]),
+  #     p_ttest = t.test(exposure ~ group)$p.value,
+  #     p_wilcox = wilcox.test(exposure ~ group)$p.value,
+  #     .groups = "drop"
+  #   ) %>%
+  #   mutate(
+  #     # Multiple testing corrections
+  #     p_ttest_Bonf = p.adjust(p_ttest, "bonferroni"),
+  #     p_ttest_BH   = p.adjust(p_ttest, "BH"),
+  #     p_wilcox_Bonf = p.adjust(p_wilcox, "bonferroni"),
+  #     p_wilcox_BH   = p.adjust(p_wilcox, "BH"),
+  #     n_samples = n_samples,
+  #     n_mutations = n_mutations,
+  #     additional_sig = additional_sig,
+  #     frac_extra = frac_extra,
+  #     seed = seed
+  #   ) %>%
+  #   arrange(p_ttest)
   results <- df %>%
     pivot_longer(
       cols = -c(Samples, group),
@@ -133,19 +167,20 @@ compare_spectra_sigprofiler_top <- function(n_samples = 5,
       mean_B = mean(exposure[group == "B"]),
       p_ttest = t.test(exposure ~ group)$p.value,
       p_wilcox = wilcox.test(exposure ~ group)$p.value,
+      present = any(exposure > 0),   # flag signatures with nonzero exposure
       .groups = "drop"
     ) %>%
+    # keep only present signatures for multiple testing correction
+    filter(present) %>%
     mutate(
-      # Multiple testing corrections
-      p_ttest_Bonf = p.adjust(p_ttest, "bonferroni"),
-      p_ttest_BH   = p.adjust(p_ttest, "BH"),
-      p_wilcox_Bonf = p.adjust(p_wilcox, "bonferroni"),
-      p_wilcox_BH   = p.adjust(p_wilcox, "BH"),
-      n_samples = n_samples,
-      n_mutations = n_mutations,
+      n_signatures_present = n(),
+      p_ttest_Bonf  = p.adjust(p_ttest,  method = "bonferroni"),
+      p_wilcox_Bonf = p.adjust(p_wilcox, method = "bonferroni"),
+      n_samples     = n_samples,
+      n_mutations   = n_mutations,
       additional_sig = additional_sig,
-      frac_extra = frac_extra,
-      seed = seed
+      frac_extra    = frac_extra,
+      seed          = seed
     ) %>%
     arrange(p_ttest)
   
@@ -210,12 +245,13 @@ run_parameter_grid <- function(
 }
 
 # Example parameter grid
+sig_probs <- c(SBS1 = 0.3, SBS5 = 0.6, SBS18 = 0.1)
 param_grid <- expand.grid(
-  frac_extra   = c(0.02, 0.05, 0.1, 0.2),
-  n_samples    = c(5, 25, 125, 625),
+  frac_extra   = c(0, 0.02, 0.05, 0.1, 0.2),
+  n_samples    = c(5, 25, 125), # c(5, 25, 125, 625)
   n_mutations  = c(50,2500),
   sig_probs    = "sig_probs",     # string so eval(parse()) works
-  additional_sig = c("SBS40", "SBS2"),
+  additional_sig = c("SBS40", "SBS2", "SBSX"),
   n_sim        = 1000,
   stringsAsFactors = FALSE
 )
@@ -223,19 +259,20 @@ param_grid
 # Run with 2 replicates per parameter set
 results <- run_parameter_grid(
   param_grid,
-  n_reps = 10,
+  n_reps = 20,
   output_file = "top_results.tsv"
 )
 
 # Show the results
 print(results)
 getwd()
-saveRDS(results, file = "top_results_simulations_sigprofiler.rds")
+#saveRDS(results, file = "top_results_simulations_sigprofiler.rds")
+saveRDS(results, file = "top_results_simulations_sigprofiler2.rds")
 
 
 ##########################
 #after running
-results_sigprof <- readRDS(file = "top_results_simulations_sigprofiler.rds")
+results_sigprof <- readRDS(file = "top_results_simulations_sigprofiler2.rds")
 results_sigprof 
 
 output2 <- results_sigprof %>%
@@ -245,8 +282,9 @@ output2 <- results_sigprof %>%
             success_wilcox = sum(p_wilcox <= 0.05)/n(),
             success_ttestBonf = sum(p_ttest_Bonf <= 0.05)/n(),
             success_wilcoxBonf = sum(p_wilcox_Bonf <= 0.05)/n(),
-            success_ttestBH = sum(p_ttest_BH <= 0.05)/n(),
-            success_wilcoxBH = sum(p_wilcox_BH <= 0.05)/n())
+            # success_ttestBH = sum(p_ttest_BH <= 0.05)/n(),
+            # success_wilcoxBH = sum(p_wilcox_BH <= 0.05)/n()
+            )
 output2
 
 simulation_plot <- function(input, test, title){
@@ -269,5 +307,5 @@ simulation_plot(output2, "success_ttest", "Testing method: ttest")
 simulation_plot(output2, "success_wilcox", "Testing method: wilcox")
 simulation_plot(output2, "success_ttestBonf", "Testing method: ttest Bonf-corrected")
 simulation_plot(output2, "success_wilcoxBonf", "Testing method: wilcox Bonf-corrected")
-simulation_plot(output2, "success_ttestBH", "Testing method: ttest BH-corrected")
-simulation_plot(output2, "success_wilcoxBonf", "Testing method: wilcox BH-corrected")
+# simulation_plot(output2, "success_ttestBH", "Testing method: ttest BH-corrected")
+# simulation_plot(output2, "success_wilcoxBonf", "Testing method: wilcox BH-corrected")
