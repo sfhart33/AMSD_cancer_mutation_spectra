@@ -1,14 +1,12 @@
 library(tidyverse)
 library(mutspecdist)
 library(reticulate)
-use_python("C:/Users/sfhar/AppData/Local/Programs/Python/Python313/python.exe", required = TRUE)
+# use_python("C:/Users/sfhar/AppData/Local/Programs/Python/Python313/python.exe", required = TRUE)
 library(SigProfilerAssignmentR)
 library(sigfit)
 data("cosmic_signatures_v3.2")
-# library(furrr)
-# library(future)
-#setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
-setwd("C:/Users/sfhar/AMSD_cancer_mutation_spectra/scripts")
+setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
+# setwd("C:/Users/sfhar/AMSD_cancer_mutation_spectra/scripts")
 
 # load novel signature
 novel_sig <- read.delim("../inputs/Roerink2018_new_sig.csv", sep = ",", header = FALSE)$V2
@@ -196,53 +194,129 @@ compare_spectra_sigprofiler_top <- function(n_samples = 5,
   return(top_result)
 }
 
+
+# run_parameter_grid <- function(
+#     param_grid,
+#     n_reps = 5,
+#     output_file = "top_results.tsv"
+# ) {
+#   all_results <- list()
+#   run_id <- 1
+# 
+#   for (i in seq_len(nrow(param_grid))) {
+#     params <- param_grid[i, ]
+# 
+#     for (rep in seq_len(n_reps)) {
+#       cat("Running param set", i, "rep", rep, "...\n")
+# 
+#       # Handle seed safely
+#       seed <- if (!is.null(params$seed)) {
+#         as.integer(params$seed) + rep
+#       } else {
+#         as.integer(Sys.time()) %% .Machine$integer.max + rep
+#       }
+# 
+#       # Run comparison
+#       res <- compare_spectra_sigprofiler_top(
+#         n_samples      = params$n_samples,
+#         n_mutations    = params$n_mutations,
+#         sig_probs      = eval(parse(text = params$sig_probs)),  # if string column
+#         additional_sig = params$additional_sig,
+#         frac_extra     = params$frac_extra,
+#         n_sim          = params$n_sim %||% 1000,
+#         seed           = seed
+#       )
+# 
+#       # Tag metadata
+#       res$replicate <- rep
+#       res$param_set <- i
+#       res$run_id    <- run_id
+# 
+#       all_results[[run_id]] <- res
+#       run_id <- run_id + 1
+#     }
+#   }
+# 
+#   df_all <- bind_rows(all_results)
+#   write.table(df_all, file = output_file, sep = "\t", quote = FALSE, row.names = FALSE)
+# 
+#   return(df_all)
+# }
+
 run_parameter_grid <- function(
     param_grid,
     n_reps = 5,
     output_file = "top_results.tsv"
 ) {
-  all_results <- list()
-  run_id <- 1
-
+  # If results file exists, read it and figure out where to resume
+  if (file.exists(output_file)) {
+    completed <- read.delim(output_file, header = TRUE, sep = "\t", check.names = FALSE)
+    cat("Resuming from existing file with", nrow(completed), "rows\n")
+  } else {
+    completed <- data.frame()
+    # Write header once
+    write.table(data.frame(), file = output_file, sep = "\t", quote = FALSE, row.names = FALSE)
+  }
+  
+  run_id <- if (nrow(completed) > 0) max(completed$run_id) + 1 else 1
+  
   for (i in seq_len(nrow(param_grid))) {
     params <- param_grid[i, ]
-
+    
     for (rep in seq_len(n_reps)) {
+      # Check if this param/rep is already done
+      if (nrow(completed) > 0 &&
+          any(completed$param_set == i & completed$replicate == rep)) {
+        next
+      }
+      
       cat("Running param set", i, "rep", rep, "...\n")
-
-      # Handle seed safely
+      
       seed <- if (!is.null(params$seed)) {
         as.integer(params$seed) + rep
       } else {
         as.integer(Sys.time()) %% .Machine$integer.max + rep
       }
-
-      # Run comparison
-      res <- compare_spectra_sigprofiler_top(
-        n_samples      = params$n_samples,
-        n_mutations    = params$n_mutations,
-        sig_probs      = eval(parse(text = params$sig_probs)),  # if string column
-        additional_sig = params$additional_sig,
-        frac_extra     = params$frac_extra,
-        n_sim          = params$n_sim %||% 1000,
-        seed           = seed
-      )
-
-      # Tag metadata
-      res$replicate <- rep
-      res$param_set <- i
-      res$run_id    <- run_id
-
-      all_results[[run_id]] <- res
-      run_id <- run_id + 1
+      
+      # Safely run one comparison
+      res <- tryCatch({
+        compare_spectra_sigprofiler_top(
+          n_samples      = params$n_samples,
+          n_mutations    = params$n_mutations,
+          sig_probs      = eval(parse(text = params$sig_probs)),
+          additional_sig = params$additional_sig,
+          frac_extra     = params$frac_extra,
+          n_sim          = params$n_sim %||% 1000,
+          seed           = seed
+        )
+      }, error = function(e) {
+        cat("Error in param set", i, "rep", rep, ":", conditionMessage(e), "\n")
+        return(NULL)
+      })
+      
+      if (!is.null(res)) {
+        res$replicate <- rep
+        res$param_set <- i
+        res$run_id    <- run_id
+        
+        # Append immediately to file
+        write.table(res, file = output_file, sep = "\t", quote = FALSE,
+                    row.names = FALSE, col.names = !file.exists(output_file), append = TRUE)
+        
+        run_id <- run_id + 1
+        
+        # Free memory
+        gc()
+        reticulate::py_run_string("import gc; gc.collect()")
+      }
     }
   }
-
-  df_all <- bind_rows(all_results)
-  write.table(df_all, file = output_file, sep = "\t", quote = FALSE, row.names = FALSE)
-
-  return(df_all)
+  
+  # Return everything (re-read final file)
+  final <- read.delim(output_file, header = TRUE, sep = "\t", check.names = FALSE)
+  return(final)
 }
+
 
 # Example parameter grid
 sig_probs <- c(SBS1 = 0.3, SBS5 = 0.6, SBS18 = 0.1)
@@ -251,61 +325,64 @@ param_grid <- expand.grid(
   n_samples    = c(5, 25, 125), # c(5, 25, 125, 625)
   n_mutations  = c(50,2500),
   sig_probs    = "sig_probs",     # string so eval(parse()) works
-  additional_sig = c("SBS40", "SBS2", "SBSX"),
+  additional_sig = c("SBSX", "SBS40", "SBS2"),
   n_sim        = 1000,
   stringsAsFactors = FALSE
 )
-param_grid
-# Run with 2 replicates per parameter set
+print(param_grid)
+
+# Run with 20 replicates per parameter set
 results <- run_parameter_grid(
   param_grid,
   n_reps = 20,
-  output_file = "top_results.tsv"
+  output_file = "top_results_sigsX-40-2.tsv"
 )
+  
+  # Show the results
+  print(results)
+  #saveRDS(results, file = "top_results_simulations_sigprofiler.rds")
+  #saveRDS(results, file = paste0("top_results_simulations_sigprofiler_",sig,".rds")) 
+  saveRDS(results, file = "top_results_simulations_sigprofiler_sigsX-40-2.rds") 
 
-# Show the results
-print(results)
-getwd()
-#saveRDS(results, file = "top_results_simulations_sigprofiler.rds")
-saveRDS(results, file = "top_results_simulations_sigprofiler2.rds")
 
 
-##########################
-#after running
-results_sigprof <- readRDS(file = "top_results_simulations_sigprofiler2.rds")
-results_sigprof 
 
-output2 <- results_sigprof %>%
-  group_by(n_samples, n_mutations, additional_sig, frac_extra) %>%
-  summarize(success_amsd = sum(amsd_p <= 0.05)/n(),
-            success_ttest = sum(p_ttest <= 0.05)/n(),
-            success_wilcox = sum(p_wilcox <= 0.05)/n(),
-            success_ttestBonf = sum(p_ttest_Bonf <= 0.05)/n(),
-            success_wilcoxBonf = sum(p_wilcox_Bonf <= 0.05)/n(),
-            # success_ttestBH = sum(p_ttest_BH <= 0.05)/n(),
-            # success_wilcoxBH = sum(p_wilcox_BH <= 0.05)/n()
-            )
-output2
-
-simulation_plot <- function(input, test, title){
-  ggplot(input,
-         aes(x = factor(n_samples, levels = c("5","25","125","625")),
-             y = get(test),
-             color = factor(frac_extra, levels = c("0.02","0.05","0.1","0.2")),
-             group = factor(frac_extra, levels = c("0.02","0.05","0.1","0.2"))))+
-  geom_point()+
-  geom_line() +
-  facet_grid(n_mutations ~ additional_sig) +
-  guides(color = guide_legend(title = "Extra mutations per \nexposure sample (%)"))+
-  xlab("Sample count (same # exposed and non-exposed)")+
-  ylab("Difference detected \n(p<0.05, fraction of 100 simulations)")+
-  ggtitle(title)+
-  theme_classic()
-}
-simulation_plot(output2, "success_amsd", "Testing method: AMSD")
-simulation_plot(output2, "success_ttest", "Testing method: ttest")
-simulation_plot(output2, "success_wilcox", "Testing method: wilcox")
-simulation_plot(output2, "success_ttestBonf", "Testing method: ttest Bonf-corrected")
-simulation_plot(output2, "success_wilcoxBonf", "Testing method: wilcox Bonf-corrected")
-# simulation_plot(output2, "success_ttestBH", "Testing method: ttest BH-corrected")
-# simulation_plot(output2, "success_wilcoxBonf", "Testing method: wilcox BH-corrected")
+# ##########################
+# #after running
+# results_sigprof <- readRDS(file = "top_results_simulations_sigprofiler2.rds")
+# results_sigprof 
+# 
+# output2 <- results_sigprof %>%
+#   group_by(n_samples, n_mutations, additional_sig, frac_extra) %>%
+#   summarize(success_amsd = sum(amsd_p <= 0.05)/n(),
+#             success_ttest = sum(p_ttest <= 0.05)/n(),
+#             success_wilcox = sum(p_wilcox <= 0.05)/n(),
+#             success_ttestBonf = sum(p_ttest_Bonf <= 0.05)/n(),
+#             success_wilcoxBonf = sum(p_wilcox_Bonf <= 0.05)/n(),
+#             # success_ttestBH = sum(p_ttest_BH <= 0.05)/n(),
+#             # success_wilcoxBH = sum(p_wilcox_BH <= 0.05)/n()
+#             )
+# output2
+# 
+# simulation_plot <- function(input, test, title){
+#   ggplot(input,
+#          aes(x = factor(n_samples, levels = c("5","25","125","625")),
+#              y = get(test),
+#              color = factor(frac_extra, levels = c("0.02","0.05","0.1","0.2")),
+#              group = factor(frac_extra, levels = c("0.02","0.05","0.1","0.2"))))+
+#   geom_point()+
+#   geom_line() +
+#   facet_grid(n_mutations ~ additional_sig) +
+#   guides(color = guide_legend(title = "Extra mutations per \nexposure sample (%)"))+
+#   xlab("Sample count (same # exposed and non-exposed)")+
+#   ylab("Difference detected \n(p<0.05, fraction of 100 simulations)")+
+#   ggtitle(title)+
+#   theme_classic()
+# }
+# simulation_plot(output2, "success_amsd", "Testing method: AMSD")
+# simulation_plot(output2, "success_ttest", "Testing method: ttest")
+# simulation_plot(output2, "success_wilcox", "Testing method: wilcox")
+# simulation_plot(output2, "success_ttestBonf", "Testing method: ttest Bonf-corrected")
+# simulation_plot(output2, "success_wilcoxBonf", "Testing method: wilcox Bonf-corrected")
+# # simulation_plot(output2, "success_ttestBH", "Testing method: ttest BH-corrected")
+# # simulation_plot(output2, "success_wilcoxBonf", "Testing method: wilcox BH-corrected")
