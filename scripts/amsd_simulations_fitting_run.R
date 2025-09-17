@@ -345,44 +345,92 @@ results <- run_parameter_grid(
   saveRDS(results, file = "top_results_simulations_sigprofiler_sigsX-40-2.rds") 
 
 
+  # intermidiate output test
+  blank_result <- compare_spectra_sigprofiler_top()
+  results <- read.delim("top_results_sigsX-40-2.tsv", header = FALSE)
+  colnames(results) <- c(colnames(blank_result), "replicate", "param_set", "run_id")
+  # results_sigprof <- filter(results, additional_sig == "SBSX")
+  results_sigprof <- results
 
-
-# ##########################
-# #after running
+##########################
+#after running
 # results_sigprof <- readRDS(file = "top_results_simulations_sigprofiler2.rds")
-# results_sigprof 
-# 
-# output2 <- results_sigprof %>%
-#   group_by(n_samples, n_mutations, additional_sig, frac_extra) %>%
-#   summarize(success_amsd = sum(amsd_p <= 0.05)/n(),
-#             success_ttest = sum(p_ttest <= 0.05)/n(),
-#             success_wilcox = sum(p_wilcox <= 0.05)/n(),
-#             success_ttestBonf = sum(p_ttest_Bonf <= 0.05)/n(),
-#             success_wilcoxBonf = sum(p_wilcox_Bonf <= 0.05)/n(),
-#             # success_ttestBH = sum(p_ttest_BH <= 0.05)/n(),
-#             # success_wilcoxBH = sum(p_wilcox_BH <= 0.05)/n()
-#             )
-# output2
-# 
-# simulation_plot <- function(input, test, title){
-#   ggplot(input,
-#          aes(x = factor(n_samples, levels = c("5","25","125","625")),
-#              y = get(test),
-#              color = factor(frac_extra, levels = c("0.02","0.05","0.1","0.2")),
-#              group = factor(frac_extra, levels = c("0.02","0.05","0.1","0.2"))))+
-#   geom_point()+
-#   geom_line() +
-#   facet_grid(n_mutations ~ additional_sig) +
-#   guides(color = guide_legend(title = "Extra mutations per \nexposure sample (%)"))+
-#   xlab("Sample count (same # exposed and non-exposed)")+
-#   ylab("Difference detected \n(p<0.05, fraction of 100 simulations)")+
-#   ggtitle(title)+
-#   theme_classic()
-# }
-# simulation_plot(output2, "success_amsd", "Testing method: AMSD")
+results_sigprof
+
+  # output2 <- results_sigprof %>%
+  #   group_by(n_samples, n_mutations, additional_sig, frac_extra) %>%
+  #   summarize(success_amsd = sum(amsd_p <= 0.05)/n(),
+  #             success_ttest = sum(p_ttest <= 0.05)/n(),
+  #             success_wilcox = sum(p_wilcox <= 0.05)/n(),
+  #             success_ttestBonf = sum(p_ttest_Bonf <= 0.05)/n(),
+  #             success_wilcoxBonf = sum(p_wilcox_Bonf <= 0.05)/n(),
+  #             # success_ttestBH = sum(p_ttest_BH <= 0.05)/n(),
+  #             # success_wilcoxBH = sum(p_wilcox_BH <= 0.05)/n()
+  #   )
+  output2 <- results_sigprof %>%
+    group_by(n_samples, n_mutations, additional_sig, frac_extra) %>%
+    summarize(success_amsd = sum(amsd_p <= 0.05)/n(),
+              success_amsd20 = sum(amsd_p <= 0.05/20)/n(),
+              success_wilcox = sum(p_wilcox <= 0.05)/n(),
+              success_wilcox20 = sum(p_wilcox <= 0.05/20)/n(),
+              success_wilcoxBonf = sum(p_wilcox_Bonf <= 0.05)/n(),
+              success_wilcoxBonf20 = sum(p_wilcox_Bonf <= 0.05/20)/n()
+    )
+output2
+
+simulation_plot <- function(input, test, title){
+  ggplot(input,
+         aes(x = factor(n_samples, levels = c("5","25","125","625")),
+             y = get(test),
+             color = factor(frac_extra, levels = c("0", "0.02","0.05","0.1","0.2")),
+             group = factor(frac_extra, levels = c("0", "0.02","0.05","0.1","0.2"))))+
+  geom_point()+
+  geom_line() +
+  geom_hline(yintercept = 0.05, linetype = "dashed") +
+  facet_grid(n_mutations ~ additional_sig) +
+  guides(color = guide_legend(title = "Extra mutations per \nexposure sample (%)"))+
+  xlab("Sample count (same # exposed and non-exposed)")+
+  ylab("Difference detected \n(p<0.05, fraction of 100 simulations)")+
+  ggtitle(title)+
+  theme_classic()
+}
+simulation_plot(output2, "success_amsd", "Testing method: AMSD")
+simulation_plot(output2, "success_amsd20", "Testing method: AMSD (Bonf adj for 20 tests)")
 # simulation_plot(output2, "success_ttest", "Testing method: ttest")
-# simulation_plot(output2, "success_wilcox", "Testing method: wilcox")
 # simulation_plot(output2, "success_ttestBonf", "Testing method: ttest Bonf-corrected")
-# simulation_plot(output2, "success_wilcoxBonf", "Testing method: wilcox Bonf-corrected")
-# # simulation_plot(output2, "success_ttestBH", "Testing method: ttest BH-corrected")
-# # simulation_plot(output2, "success_wilcoxBonf", "Testing method: wilcox BH-corrected")
+simulation_plot(output2, "success_wilcox", "Testing method: wilcox")
+simulation_plot(output2, "success_wilcox20", "Testing method: wilcox (Bonf adj for 20 tests)")
+simulation_plot(output2, "success_wilcoxBonf", "Testing method: wilcox Bonf-corrected")
+simulation_plot(output2, "success_wilcoxBonf20", "Testing method: wilcox Bonf-corrected (Bonf adj for 20 tests)")
+
+summary_sig <- results_sigprof %>%
+  filter(p_wilcox_Bonf < 0.05) %>%
+  group_by(signature, additional_sig) %>%
+  summarise(
+    n_hits = n()
+    )
+
+summary_sig
+
+results_sigprof %>%
+  filter(additional_sig == "SBSX", n_mutations == 50, n_samples == 25, frac_extra == 0.2) %>%
+  ggplot(aes(-log10(amsd_p), -log10(p_wilcox_Bonf)))+
+  geom_point()+
+  geom_hline(yintercept = -log10(0.05))+
+  geom_vline(xintercept = -log10(0.05))+
+  ggtitle("SBSX, 50 mutations, 25 samples, 20% extra")
+results_sigprof %>%
+  filter(additional_sig == "SBSX", n_mutations == 2500, n_samples == 25, frac_extra == 0.02) %>%
+  ggplot(aes(-log10(amsd_p), -log10(p_wilcox_Bonf)))+
+  geom_point()+
+  geom_hline(yintercept = -log10(0.05))+
+  geom_vline(xintercept = -log10(0.05))+
+  ggtitle("SBSX, 2500 mutations, 25 samples, 2% extra")
+results_sigprof %>%
+  filter(additional_sig == "SBSX", n_mutations == 2500, n_samples == 5, frac_extra == 0.1) %>%
+  ggplot(aes(-log10(amsd_p), -log10(p_wilcox_Bonf)))+
+  geom_point()+
+  geom_hline(yintercept = -log10(0.05))+
+  geom_vline(xintercept = -log10(0.05))+
+  xlim(0,2.5)+
+  ggtitle("SBSX, 50 mutations, 5 samples, 10% extra")
