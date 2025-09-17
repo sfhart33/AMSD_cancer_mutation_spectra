@@ -142,6 +142,82 @@ mexposuresig3 %>%
   geom_boxplot()+
   geom_jitter()
 
+# spectra comparison
+
+ox <- mouse_carcinogen_spectra[pull(filter(sample_table, tissue == "LIVER", exposure == "OXAZEPAM"), label),]
+ox
+tcp <- mouse_carcinogen_spectra[pull(filter(sample_table, tissue == "LIVER", exposure == "1,2,3_TRICHLOROPROPANE"), label),]
+tcp
+spon <- mouse_carcinogen_spectra[pull(filter(sample_table, tissue == "LIVER", exposure == "SPONTANEOUS"), label),]
+spon
+
+ox_long <- ox %>%
+  as.data.frame() %>%
+  mutate(sample = paste0("ox_", row_number()), group = "ox") %>%
+  pivot_longer(-c(sample, group), names_to = "trinuc", values_to = "freq")
+
+spon_long <- spon %>%
+  as.data.frame() %>%
+  mutate(sample = paste0("spon_", row_number()), group = "spon") %>%
+  pivot_longer(-c(sample, group), names_to = "trinuc", values_to = "freq")
+
+tcp_long <- tcp %>%
+  as.data.frame() %>%
+  mutate(sample = paste0("tcp_", row_number()), group = "tcp") %>%
+  pivot_longer(-c(sample, group), names_to = "trinuc", values_to = "freq")
+
+dat_long <- bind_rows(ox_long, spon_long, tcp_long)
+
+# Run Wilcoxon per trinucleotide
+results_ox <- dat_long %>%
+  group_by(trinuc) %>%
+  summarise(
+    pval = wilcox.test(freq[group == "ox"], freq[group == "spon"])$p.value,
+    mean_ox = mean(freq[group == "ox"], na.rm = TRUE),
+    mean_spon = mean(freq[group == "spon"], na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    effect = mean_ox - mean_spon,            # raw difference
+    log2fc = log2((mean_ox + 1e-6) / (mean_spon + 1e-6)),  # fold change
+    padj = p.adjust(pval, method = "BH")     # FDR correction
+  )
+results_ox
+results_tcp <- dat_long %>%
+  group_by(trinuc) %>%
+  summarise(
+    pval = wilcox.test(freq[group == "tcp"], freq[group == "spon"])$p.value,
+    mean_tcp = mean(freq[group == "tcp"], na.rm = TRUE),
+    mean_spon = mean(freq[group == "spon"], na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    effect = mean_tcp - mean_spon,            # raw difference
+    log2fc = log2((mean_tcp + 1e-6) / (mean_spon + 1e-6)),  # fold change
+    padj = p.adjust(pval, method = "BH")     # FDR correction
+  )
+results_tcp
+# Volcano plot (effect size vs -log10 p-value)
+ggplot(results_ox, aes(x = effect, y = -log10(pval), label = trinuc)) +
+  geom_point(aes(color = padj < 0.1)) +
+  geom_label_repel()+
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed") +
+  theme_bw() +
+  labs(
+    x = "Mean difference (oxazempam - spontaneous)",
+    y = "-log10(p-value)",
+    color = "FDR < 0.1"
+  )
+ggplot(results_tcp, aes(x = effect, y = -log10(pval), label = trinuc)) +
+  geom_point(aes(color = padj < 0.1)) +
+  geom_label_repel()+
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed") +
+  theme_bw() +
+  labs(
+    x = "Mean difference (TCP - spontaneous)",
+    y = "-log10(p-value)",
+    color = "FDR < 0.1"
+  )
 #############################
 #TCGA
 
