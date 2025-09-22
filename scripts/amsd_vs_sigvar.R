@@ -1,0 +1,1 @@
+devtools::install_github("MaikeMorrison/sigvar", dependencies = TRUE, build_vignettes = TRUE)
