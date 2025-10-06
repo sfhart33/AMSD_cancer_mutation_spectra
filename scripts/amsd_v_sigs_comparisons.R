@@ -1,4 +1,5 @@
 library(ggrepel)
+library(patchwork)
 
 ############### MICE
 # after amsd_mouse_plotting
@@ -263,59 +264,94 @@ files <- list.files("../outputs", pattern = "^sigprofiler_exposures_.*\\.rds$", 
 analyze_file <- function(file) {
   dat <- readRDS(file)
   
-  # 2. Convert counts to fractions per row
+  # 2. Signature columns
   sig_cols <- grep("^SBS", names(dat), value = TRUE)
-  dat <- dat %>%
+  
+  # --- keep counts ---
+  dat_counts <- dat %>%
+    select(all_of(c(sig_cols, "ancestry", "tissue_type"))) %>%
+    mutate(file = basename(file),
+           tumor_type = unique(dat$tissue_type))
+  
+  # --- convert to fractions ---
+  dat_frac <- dat %>%
     mutate(row_sum = rowSums(across(all_of(sig_cols)))) %>%
     mutate(across(all_of(sig_cols), ~ .x / row_sum)) %>%
-    select(-row_sum)
-  
-  # add metadata columns
-  dat <- dat %>%
+    select(-row_sum) %>%
     mutate(file = basename(file),
            tumor_type = unique(dat$tissue_type))
   
   # Get which ancestries are present
   ancestries <- unique(dat$ancestry)
   if (length(ancestries) != 2) {
-    return(list(results = NULL, raw = dat))
+    return(list(results = NULL, raw_frac = dat_frac, raw_counts = dat_counts))
   }
   
-  # 3. Run wilcox test for each SBS
-  results <- map_dfr(sig_cols, function(sig) {
-    test <- wilcox.test(dat[[sig]] ~ dat$ancestry)
-    #test <- t.test(dat[[sig]] ~ dat$ancestry)
+  # 3a. Wilcox tests on FRACTIONS
+  results_frac <- map_dfr(sig_cols, function(sig) {
+    test <- wilcox.test(dat_frac[[sig]] ~ dat_frac$ancestry)
     tibble(
       signature = sig,
       ancestry1 = ancestries[1],
       ancestry2 = ancestries[2],
-      p_value = test$p.value,
-      mean1 = mean(dat[[sig]][dat$ancestry == ancestries[1]]),
-      mean2 = mean(dat[[sig]][dat$ancestry == ancestries[2]]),
-      median1 = median(dat[[sig]][dat$ancestry == ancestries[1]]),
-      median2 = median(dat[[sig]][dat$ancestry == ancestries[2]]),
-      file = basename(file),
-      tumor_type = unique(dat$tissue_type)
+      p_value   = test$p.value,
+      mean1     = mean(dat_frac[[sig]][dat_frac$ancestry == ancestries[1]]),
+      mean2     = mean(dat_frac[[sig]][dat_frac$ancestry == ancestries[2]]),
+      sd1       = sd(dat_frac[[sig]][dat_frac$ancestry == ancestries[1]]),
+      sd2       = sd(dat_frac[[sig]][dat_frac$ancestry == ancestries[2]]),
+      n1        = length(dat_frac[[sig]][dat_frac$ancestry == ancestries[1]]),
+      n2        = length(dat_frac[[sig]][dat_frac$ancestry == ancestries[2]]),
+      file      = basename(file),
+      tumor_type = unique(dat$tissue_type),
+      measure   = "fraction"
     )
   })
   
-  list(results = results, raw = dat)
+  # 3b. Wilcox tests on COUNTS
+  results_count <- map_dfr(sig_cols, function(sig) {
+    test <- wilcox.test(dat_counts[[sig]] ~ dat_counts$ancestry)
+    tibble(
+      signature = sig,
+      ancestry1 = ancestries[1],
+      ancestry2 = ancestries[2],
+      p_value   = test$p.value,
+      mean1     = mean(dat_counts[[sig]][dat_counts$ancestry == ancestries[1]]),
+      mean2     = mean(dat_counts[[sig]][dat_counts$ancestry == ancestries[2]]),
+      sd1     = sd(dat_counts[[sig]][dat_counts$ancestry == ancestries[1]]),
+      sd2     = sd(dat_counts[[sig]][dat_counts$ancestry == ancestries[2]]),
+      n1        = length(dat_counts[[sig]][dat_frac$ancestry == ancestries[1]]),
+      n2        = length(dat_counts[[sig]][dat_frac$ancestry == ancestries[2]]),
+      file      = basename(file),
+      tumor_type = unique(dat$tissue_type),
+      measure   = "count"
+    )
+  })
+  
+  # merge into one table
+  results <- bind_rows(results_frac, results_count)
+  
+  list(results = results, raw_frac = dat_frac, raw_counts = dat_counts)
 }
 
 # 4. Apply to all files
 all_outputs <- map(files, analyze_file)
 
-# Separate into results and raw data
-all_results <- map_dfr(all_outputs, "results")   # comparison results
-all_raw     <- map_dfr(all_outputs, "raw")       # per-sample fractions
+# Big combined results table
+all_results <- map_dfr(all_outputs, "results")
+
+# Raw per-sample data
+all_raw_frac  <- map_dfr(all_outputs, "raw_frac")
+all_raw_count <- map_dfr(all_outputs, "raw_counts")
+
+
 
 ###########
 
-tcga_test_count <- filter(all_results, !is.na(p_value)) %>% nrow()
+tcga_test_count <- filter(all_results, measure == "fraction", !is.na(p_value)) %>% nrow()
 
 # 5. just top hits
 top_hits <- all_results %>%
-  filter(!is.na(p_value), is.finite(p_value)) %>%   # remove NA/NaN p-values
+  filter(!is.na(p_value), is.finite(p_value), measure == "fraction") %>%   # remove NA/NaN p-values
   group_by(file) %>%
   slice_min(order_by = p_value, n = 1, with_ties = FALSE) %>%
   ungroup()
@@ -333,7 +369,7 @@ full_join(ancestry_amsd_output, top_hits) %>%
   xlab("AMSD p-value")+
   ylab("Top signature pvalue (wilcox)")
 
-
+all_raw
 all_raw  %>%
   filter(tumor_type == "KIRP") %>% 
   select(-file) %>%
@@ -378,28 +414,78 @@ all_raw_long %>%
   head()
 
 
-plot_sig_volcano <- function(anc1, anc2, tumor){
-  p <- filter(ancestry_amsd_output,
-                   tumor_type == tumor,
-                   ancestry1 == anc1,
-                   ancestry2 == anc2) %>%
-  pull(pvalues)
+# plot_sig_volcano <- function(anc1, anc2, tumor){
+#   p <- filter(ancestry_amsd_output,
+#                    tumor_type == tumor,
+#                    ancestry1 == anc1,
+#                    ancestry2 == anc2) %>%
+#   pull(pvalues)
+#   subset_tcga <- all_results %>%
+#     mutate(ancestries = paste0(ancestry1, "_v_", ancestry2)) %>%
+#     filter(tumor_type == tumor, 
+#            ancestries == paste0(anc1, "_v_", anc2), 
+#            !is.na(p_value))
+#   subset_tcga %>%
+#     ggplot(aes(x = (mean1 - mean2), y = -log10(p_value), label = signature))+
+#     geom_point()+
+#     geom_hline(yintercept = -log10(0.05))+
+#     geom_hline(yintercept = -log10(0.05/nrow(subset_tcga)))+
+#     geom_hline(yintercept = -log10(0.05/tcga_test_count))+
+#     geom_label_repel()+
+#     labs(title = paste0(tumor,": ",anc1, " vs ", anc2, ", AMSD pvalue = ", p),
+#          x = "Difference in means")
+# }
+plot_sig_volcano <- function(anc1, anc2, tumor, measure = c("fraction", "count")) {
+  measure <- match.arg(measure)
+  
+  # AMSD p-value for context
+  p <- ancestry_amsd_output %>%
+    filter(
+      tumor_type == tumor,
+      ancestry1 == anc1,
+      ancestry2 == anc2
+    ) %>%
+    pull(pvalues)
+  
+  # Subset results by ancestry + tumor + measure
   subset_tcga <- all_results %>%
     mutate(ancestries = paste0(ancestry1, "_v_", ancestry2)) %>%
-    filter(tumor_type == tumor, 
-           ancestries == paste0(anc1, "_v_", anc2), 
-           !is.na(p_value))
-  subset_tcga %>%
-    ggplot(aes(x = (mean1 - mean2), y = -log10(p_value), label = signature))+
-    geom_point()+
-    geom_hline(yintercept = -log10(0.05))+
-    geom_hline(yintercept = -log10(0.05/nrow(subset_tcga)))+
-    geom_hline(yintercept = -log10(0.05/tcga_test_count))+
-    geom_label_repel()+
-    labs(title = paste0(tumor,": ",anc1, " vs ", anc2, ", AMSD pvalue = ", p),
-         x = "Difference in means")
+    filter(
+      tumor_type == tumor,
+      ancestries == paste0(anc1, "_v_", anc2),
+      measure == !!measure,         # key filter: only use chosen measure
+      !is.na(p_value)
+    )
+  
+  # Number of tests for Bonferroni
+  n_tests <- nrow(subset_tcga)
+  
+  # Plot
+  ggplot(subset_tcga, aes(x = mean1 - mean2, y = -log10(p_value), label = signature)) +
+    geom_point(color = ifelse(measure == "fraction", "darkorange", "steelblue")) +
+    geom_hline(yintercept = -log10(0.05), color = "red", linetype = "dashed") +
+    geom_hline(yintercept = -log10(0.05 / n_tests), color = "blue", linetype = "dashed") +
+    geom_label_repel(max.overlaps = 20) +
+    labs(
+      title = paste0(
+        tumor, ": ", anc1, " vs ", anc2,
+        ", AMSD p = ", signif(p, 3),
+        " [", measure, "]"
+      ),
+      x = "Difference in means",
+      y = "-log10(p-value)"
+    )
 }
-plot_sig_volcano("afr", "eas","LUAD")
+
+plot_sig_volcano("afr", "eas","LUAD", measure = "count")
+plot_sig_volcano("afr", "eas","LUAD", measure = "fraction")
+plot_sig_volcano("eas", "eur","LUAD", measure = "count")
+plot_sig_volcano("eas", "eur","LUAD", measure = "fraction")
+
+
+plot_sig_volcano("eas", "eur","BLCA", measure = "count")
+plot_sig_volcano("eas", "eur","BLCA", measure = "fraction")
+
 plot_sig_volcano("eas", "eur","UCEC")
 plot_sig_volcano("eas", "eur","KIRP")
 plot_sig_volcano("eas", "eur","SARC")
@@ -437,3 +523,78 @@ ggplot(ancestry_amsd_perms, aes(UCEC.eas_eur))+
   geom_histogram()+
   geom_vline(xintercept = ancestry_amsd_output[66,"cosines"])+
   labs(title = "UCEC: eas vs eur", x = "cosine distance",y = "permutation count")
+
+
+################# Looking comparison plots again
+plot_sig_means <- function(anc1, anc2, tumor, measure = c("fraction", "count")) {
+  measure <- match.arg(measure)
+  
+  # Subset results
+  subset_tcga <- all_results %>%
+    mutate(ancestries = paste0(ancestry1, "_v_", ancestry2)) %>%
+    filter(
+      tumor_type == tumor,
+      ancestries == paste0(anc1, "_v_", anc2),
+      measure == !!measure,
+      !is.na(p_value)
+    )
+  
+  ggplot(subset_tcga, aes(x = mean1, y = mean2, label = signature)) +
+    geom_point(color = ifelse(measure == "fraction", "darkorange", "steelblue")) +
+    # Error bars for ancestry1 (x-axis)
+    geom_errorbarh(aes(xmin = mean1 - sd1/sqrt(n1), xmax = mean1 + sd1/sqrt(n1)),
+                   height = 0, alpha = 0.5) +
+    # Error bars for ancestry2 (y-axis)
+    geom_errorbar(aes(ymin = mean2 - sd2/sqrt(n2), ymax = mean2 + sd2/sqrt(n2)),
+                  width = 0, alpha = 0.5) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "gray40") +
+    geom_label_repel(max.overlaps = 20) +
+    # ggrepel::geom_label_repel(
+    #   data = subset_tcga %>%
+    #     filter(p_value < 0.05,
+    #            abs(mean1 - mean2) > 0.01,
+    #            mean1/mean2 > 1.1 | mean2/mean1 > 1.1),
+    #   aes(label = signature),
+    #   max.overlaps = 20
+    # ) +
+    labs(
+      title = paste0(
+        tumor, ": ", anc1, " vs ", anc2, " (", measure, ")"
+      ),
+      x = paste0("Mean in ", anc1),
+      y = paste0("Mean in ", anc2)
+    ) +
+    theme_minimal()
+}
+plot_sig_means("afr", "eas", "LUAD", measure = "fraction")
+plot_sig_means("afr", "eas", "LUAD", measure = "count")
+plot_sig_means("eas", "eur", "LUAD", measure = "fraction")
+plot_sig_means("eas", "eur", "LUAD", measure = "count")
+plot_sig_means("eas", "eur", "ESCA", measure = "fraction")
+plot_sig_means("eas", "eur", "ESCA", measure = "count")
+
+
+plot_sig_means("eas", "eur", "UCEC", measure = "fraction")
+plot_sig_means("eas", "eur", "UCEC", measure = "count")
+plot_sig_means("eas", "eur", "KIRP", measure = "fraction")
+plot_sig_means("eas", "eur", "KIRP", measure = "count")
+
+ancestry_amsd_output
+
+# Function to make multi-panel plots for top hits
+plot_top_hits <- function(df, p_cutoff = 0.05, measure_type = "fraction") {
+  top_hits <- df %>%
+    filter(pvalues < p_cutoff) %>%
+    arrange(pvalues)
+  
+  # Generate plots
+  plots <- map(seq_len(nrow(top_hits)), function(i) {
+    row <- top_hits[i, ]
+    plot_sig_means(row$ancestry1, row$ancestry2, row$tumor_type, measure_type)
+  })
+  
+  # Combine into a grid
+  wrap_plots(plots, ncol = 3)
+}
+plot_top_hits(ancestry_amsd_output, p_cutoff = 0.01, measure_type = "fraction")
+plot_top_hits(ancestry_amsd_output, p_cutoff = 0.01, measure_type = "count")

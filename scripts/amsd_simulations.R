@@ -59,34 +59,34 @@ library(mutspecdist)
     mutate(group = paste0(extra_muts,"% ",exposure))
   
   saveRDS(output, "../outputs/amsd_simulation_output.rds")
-  output <- readRDS("../outputs/amsd_simulation_output.rds")
-  
-  output
-  output2 <- output %>%
-    group_by(n_samples, n_mutations, exposure, extra_muts) %>%
-    summarize(mean_p = mean(as.numeric(pvalue)),
-              sd_p = sd(as.numeric(pvalue)),
-              success_frac = sum(pvalue <= 0.05)/n())
-  output2
-
-  simulation_plot <- output2 %>%
-    ggplot(aes(x = factor(n_samples, levels = c("5","25","125","625")),
-               y = success_frac,
-               color = factor(extra_muts, levels = c("0.02","0.05","0.1","0.2")),
-               group = factor(extra_muts, levels = c("0.02","0.05","0.1","0.2"))))+
-    geom_point()+
-    geom_line() +
-    facet_grid(n_mutations ~ exposure) +
-    guides(color = guide_legend(title = "Extra mutations per \nexposure sample (%)"))+
-    xlab("Sample count (same # exposed and non-exposed)")+
-    ylab("Difference detected \n(p<0.05, fraction of 100 simulations)")+
-    # ggtitle("AMSD strength of detection in \nWES (50 mu/sample) and WGS (2500 mu/sample)")+
-    theme_classic()
-  simulation_plot
-  ggsave("../outputs/amsd_simulations.png",
-         plot = simulation_plot,
-         width = 7,
-         height = 5,
-         units = "in"
-         )
+  # output <- readRDS("../outputs/amsd_simulation_output.rds")
+  # 
+  # output
+  # output2 <- output %>%
+  #   group_by(n_samples, n_mutations, exposure, extra_muts) %>%
+  #   summarize(mean_p = mean(as.numeric(pvalue)),
+  #             sd_p = sd(as.numeric(pvalue)),
+  #             success_frac = sum(pvalue <= 0.05)/n())
+  # output2
+  # 
+  # simulation_plot <- output2 %>%
+  #   ggplot(aes(x = factor(n_samples, levels = c("5","25","125","625")),
+  #              y = success_frac,
+  #              color = factor(extra_muts, levels = c("0.02","0.05","0.1","0.2")),
+  #              group = factor(extra_muts, levels = c("0.02","0.05","0.1","0.2"))))+
+  #   geom_point()+
+  #   geom_line() +
+  #   facet_grid(n_mutations ~ exposure) +
+  #   guides(color = guide_legend(title = "Extra mutations per \nexposure sample (%)"))+
+  #   xlab("Sample count (same # exposed and non-exposed)")+
+  #   ylab("Difference detected \n(p<0.05, fraction of 100 simulations)")+
+  #   # ggtitle("AMSD strength of detection in \nWES (50 mu/sample) and WGS (2500 mu/sample)")+
+  #   theme_classic()
+  # simulation_plot
+  # ggsave("../outputs/amsd_simulations.png",
+  #        plot = simulation_plot,
+  #        width = 7,
+  #        height = 5,
+  #        units = "in"
+  #        )
   
