@@ -121,7 +121,7 @@ See example analysis in the [mutspecdist README](https://github.com/sfhart33/mut
 
 If you use this R package or results for your own research, please use the following citation:
 
-- Hart S.F.M., Alcala N., Feder A.F., Harris K. (under review) *A signature-agnostic test for differences between tumor mutation spectra reveals carcinogen and ancestry effects*.
+- Hart S.F.M., Alcala N., Feder A.F., Harris K. (2025) *[A signature-agnostic test for differences between tumor mutation spectra reveals carcinogen and ancestry effects](https://www.biorxiv.org/content/10.1101/2025.05.15.654154v1)*. bioRxiv.
 
 All input data is from publically available datasets. If you used any of the results, we also recommend citing the cooresponding data source:
 
