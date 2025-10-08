@@ -50,14 +50,24 @@ setwd("./AMSD_cancer_mutation_spectra/scripts")
 
 # Generates simulations from Supp Fig 1
      source("amsd_simulations.R")   
+     source("amsd_simulations_v_fitting.R")   
+     source("amsd_simulations_fitting_plotting.R")   
 # Runs AMSD on mouse tumors grouped by carcinogen exposure
      source("amsd_mouse_carcinogens.R")   
      source("amsd_mouse_plotting.R")
+     source("amsd_mouse_snvs_oxazepam.R") # deeper dive into what's causing oxazepam difference
 # Runs AMSD on mesothelioma grouped by professional asbestos exposure and plots results
      source("amsd_asbestos.R")  
 # Runs AMSD on TCGA cancer types grouped by genetic ancestry
-     source("amsd_tcga_ancestry.R")        
+     source("amsd_tcga_ancestry_withfitting.R")        
      source("amsd_tcga_plotting.R")
+# Compare ASMD results to other methods
+     source("amsd_v_sigs_comparisons.R")
+     source("amsd_vs_sigvar.R")
+# Compare ASMD results whether weighting by mutations
+     source("amsd_mouse_carcinogens_unweighted.R")
+     source("amsd_tcga_ancestry_unweighted.R")
+     source("amsd_weighted_v_unweighted.R")
 ```
 
 From the command line:
@@ -66,14 +76,24 @@ cd ./AMSD_cancer_mutation_spectra/scripts
 
 # Generates simulations from Supp Fig 1
      Rscript amsd_simulations.R
+     Rscript amsd_simulations_v_fitting.R 
+     Rscript amsd_simulations_fitting_plotting.R
 # Runs AMSD on mouse tumors grouped by carcinogen exposure
      Rscript amsd_mouse_carcinogens.R   
      Rscript amsd_mouse_plotting.R
+     Rscript amsd_mouse_snvs_oxazepam.R # deeper dive into what's causing oxazepam difference
 # Runs AMSD on mesothelioma grouped by professional asbestos exposure and plots results
      Rscript amsd_asbestos.R
 # Runs AMSD on TCGA cancer types grouped by genetic ancestry
-     Rscript amsd_tcga_ancestry.R      
+     Rscript amsd_tcga_ancestry_withfitting.R      
      Rscript amsd_tcga_plotting.R
+# Compare ASMD results to other methods
+     Rscript amsd_v_sigs_comparisons.R
+     Rscript amsd_vs_sigvar.R
+# Compare ASMD results whether weighting by mutations
+     Rscript amsd_mouse_carcinogens_unweighted.R
+     Rscript amsd_tcga_ancestry_unweighted.R
+     Rscript amsd_weighted_v_unweighted.R
 ```
 
 
