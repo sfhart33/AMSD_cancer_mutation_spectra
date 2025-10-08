@@ -29,7 +29,7 @@ devtools::install_github("sfhart33/mutspecdist")
 
 ### Dependencies
 
-See [SigProfilerAssignmentR](https://github.com/AlexandrovLab/SigProfilerAssignmentR) for SigProfiler installation instructions
+
 
 ```r
 install.packages(c("tidyverse","ggpubr","ggrepel","RColorBrewer","svglite"))
@@ -44,8 +44,8 @@ devtools::install_github("kgori/sigfit")
 - RColorBrewer            v1.1-3   (color palettes)
 - svglite                 v2.1.3   (output scalable vector graphics)
 - sigfit                  v2.2     (signature fitting tool)
-- SigProfilerAssignment   V0.2.0   (signature fitting tool - PYTHON)
-
+- SigProfilerAssignment   v0.2.0   (signature fitting tool - PYTHON)
+*See [SigProfilerAssignmentR](https://github.com/AlexandrovLab/SigProfilerAssignmentR) for SigProfiler installation instructions*
 
 ### Run scripts to generate figures
 
