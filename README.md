@@ -44,8 +44,7 @@ devtools::install_github("kgori/sigfit")
 - RColorBrewer            v1.1-3   (color palettes)
 - svglite                 v2.1.3   (output scalable vector graphics)
 - sigfit                  v2.2     (signature fitting tool)
-- SigProfilerAssignment   v0.2.0   (signature fitting tool - PYTHON)
-*See [SigProfilerAssignmentR](https://github.com/AlexandrovLab/SigProfilerAssignmentR) for SigProfiler installation instructions*
+- SigProfilerAssignment   v0.2.0   (signature fitting tool: *See [SigProfilerAssignmentR](https://github.com/AlexandrovLab/SigProfilerAssignmentR) for SigProfiler installation instructions*)
 
 ### Run scripts to generate figures
 
