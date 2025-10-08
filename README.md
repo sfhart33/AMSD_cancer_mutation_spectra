@@ -29,18 +29,23 @@ devtools::install_github("sfhart33/mutspecdist")
 
 ### Dependencies
 
+See [SigProfilerAssignmentR](https://github.com/AlexandrovLab/SigProfilerAssignmentR) for SigProfiler installation instructions
+
 ```r
 install.packages(c("tidyverse","ggpubr","ggrepel","RColorBrewer","svglite"))
+
 devtools::install_github("kgori/sigfit")
 ```
 
 *versions indicate those used for original analysis*
-- tidyverse     v2.0.0
-- ggpubr        v0.6.0   (for multi-panel plotting)
-- ggrepel       v0.9.6   (for figure labels)
-- RColorBrewer  v1.1-3   (color palettes)
-- svglite       v2.1.3   (output scalable vector graphics)
-- sigfit        v2.2     (signature fitting tool)
+- tidyverse               v2.0.0
+- ggpubr                  v0.6.0   (for multi-panel plotting)
+- ggrepel                 v0.9.6   (for figure labels)
+- RColorBrewer            v1.1-3   (color palettes)
+- svglite                 v2.1.3   (output scalable vector graphics)
+- sigfit                  v2.2     (signature fitting tool)
+- SigProfilerAssignment   V0.2.0   (signature fitting tool - PYTHON)
+
 
 ### Run scripts to generate figures
 
@@ -55,7 +60,7 @@ setwd("./AMSD_cancer_mutation_spectra/scripts")
 # Runs AMSD on mouse tumors grouped by carcinogen exposure
      source("amsd_mouse_carcinogens.R")   
      source("amsd_mouse_plotting.R")
-     source("amsd_mouse_snvs_oxazepam.R") # deeper dive into what's causing oxazepam difference
+     source("amsd_mouse_snvs_oxazepam.R") # deeper dive into what's causing oxazepam difference (requires additional Bioconductor packages)
 # Runs AMSD on mesothelioma grouped by professional asbestos exposure and plots results
      source("amsd_asbestos.R")  
 # Runs AMSD on TCGA cancer types grouped by genetic ancestry
@@ -81,7 +86,7 @@ cd ./AMSD_cancer_mutation_spectra/scripts
 # Runs AMSD on mouse tumors grouped by carcinogen exposure
      Rscript amsd_mouse_carcinogens.R   
      Rscript amsd_mouse_plotting.R
-     Rscript amsd_mouse_snvs_oxazepam.R # deeper dive into what's causing oxazepam difference
+     Rscript amsd_mouse_snvs_oxazepam.R # deeper dive into what's causing oxazepam difference (requires additional Bioconductor packages)
 # Runs AMSD on mesothelioma grouped by professional asbestos exposure and plots results
      Rscript amsd_asbestos.R
 # Runs AMSD on TCGA cancer types grouped by genetic ancestry
