@@ -1,4 +1,5 @@
 library(tidyverse)
+library(ggpubr)
 library(ggrepel)
 library(sigfit)
 
@@ -30,11 +31,12 @@ anc_plot <- ancestry_amsd_output %>%
               aes(-log10(pvalues),
                   -log10(pvalues2)),
               color = "black")+
-  geom_label_repel()+
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed")+
   geom_vline(xintercept = -log10(0.05))+
   geom_vline(xintercept = -log10(0.05/67))+
   geom_hline(yintercept = -log10(0.05))+
   geom_hline(yintercept = -log10(0.05/67))+
+  geom_label_repel()+
   labs(x = "-log10(AMSD p-value): all samples weighted equally",
        y = "-log10(AMSD p-value):\nsamples weighted by mutation count")+
   theme_classic()
@@ -47,11 +49,13 @@ mouse_plot <- mouse_amsd_output %>%
               aes(-log10(pvalues),
                   -log10(pvalues2)),
               color = "black")+
-  geom_label_repel()+
+  geom_label_repel(max.overlaps = 1)+
+  geom_abline(intercept = 0, slope = 1, linetype = "dashed")+
   geom_vline(xintercept = -log10(0.05))+
   geom_vline(xintercept = -log10(0.05/67))+
   geom_hline(yintercept = -log10(0.05))+
   geom_hline(yintercept = -log10(0.05/67))+
+  geom_label_repel()+
   labs(x = "-log10(AMSD p-value): all samples weighted equally",
        y = "-log10(AMSD p-value):\nsamples weighted by mutation count")+
   theme_classic()

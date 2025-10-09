@@ -1,7 +1,10 @@
 library(ggrepel)
+library(ggpubr)
 # library(ggtext)
 # library(patchwork)
-source("amsd_weighted_v_unweighted.R")
+#source("amsd_weighted_v_unweighted.R")
+# setwd("\\\\gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/scripts")
+source("amsd_vs_sigvar.R")
 
 ############### MICE
 # load data
@@ -29,37 +32,32 @@ source("amsd_weighted_v_unweighted.R")
   mexposuresig3 <- mexposuresig2 %>% filter(tissue %in% c("LIVER","LUNG"))
 
 # get p-values for all tests
+#####################################################################
   compute_sig_tests_loop <- function(df,
-                                     tissues = NULL,    # optional character vector, e.g. c("LIVER","LUNG")
-                                     min_n = 2,         # minimum sample count in each group to run tests
+                                     tissues = NULL,    # optional vector, e.g. c("LIVER","LUNG")
+                                     min_n = 2,         # min samples per group
                                      top_by = c("wilcox", "ttest")) {
     
     top_by <- match.arg(top_by)
-    
     df <- dplyr::as_tibble(df)
     if (!is.null(tissues)) df <- df %>% filter(tissue %in% tissues)
     
     tissues_vec <- unique(df$tissue)
-    if (length(tissues_vec) == 0) stop("No tissues found in the data (after optional filtering).")
+    if (length(tissues_vec) == 0) stop("No tissues found in the data (after filtering).")
     
-    results_list <- vector("list", length = 0)
+    results_list <- list()
     rowid <- 1L
     
     for (t in tissues_vec) {
       df_t <- df %>% filter(tissue == t)
       
-      # need a SPONTANEOUS group to compare against
       if (!any(df_t$exposure == "SPONTANEOUS")) {
         warning("Tissue '", t, "' has no SPONTANEOUS group — skipping.")
         next
       }
       
-      exposures_to_test <- sort(unique(df_t$exposure))
-      exposures_to_test <- exposures_to_test[exposures_to_test != "SPONTANEOUS"]
-      if (length(exposures_to_test) == 0) {
-        message("Tissue '", t, "' has no non-SPONTANEOUS exposures — skipping.")
-        next
-      }
+      exposures_to_test <- setdiff(unique(df_t$exposure), "SPONTANEOUS")
+      if (length(exposures_to_test) == 0) next
       
       sigs <- unique(df_t$name)
       
@@ -73,9 +71,8 @@ source("amsd_weighted_v_unweighted.R")
           mean_spont <- if (n_spont > 0) mean(spont_vals, na.rm = TRUE) else NA_real_
           mean_exp   <- if (n_exp > 0)   mean(exp_vals, na.rm = TRUE)   else NA_real_
           
-          p_ttest <- NA_real_
+          p_ttest  <- NA_real_
           p_wilcox <- NA_real_
-          
           if (n_spont >= min_n && n_exp >= min_n) {
             p_ttest  <- tryCatch(t.test(exp_vals, spont_vals)$p.value, error = function(e) NA_real_)
             p_wilcox <- tryCatch(wilcox.test(exp_vals, spont_vals, exact = FALSE)$p.value, error = function(e) NA_real_)
@@ -100,32 +97,27 @@ source("amsd_weighted_v_unweighted.R")
     
     results_df <- bind_rows(results_list)
     
-    # multiple-testing corrections per tissue × exposure
+    # Bonferroni correction *within each tissue × exposure*
     results_df <- results_df %>%
       group_by(tissue, exposure) %>%
       mutate(
-        p_ttest_Bonf  = ifelse(all(is.na(p_ttest)), NA_real_, p.adjust(p_ttest, method = "bonferroni")),
-        p_ttest_BH    = ifelse(all(is.na(p_ttest)), NA_real_, p.adjust(p_ttest, method = "BH")),
-        p_wilcox_Bonf = ifelse(all(is.na(p_wilcox)), NA_real_, p.adjust(p_wilcox, method = "bonferroni")),
-        p_wilcox_BH   = ifelse(all(is.na(p_wilcox)), NA_real_, p.adjust(p_wilcox, method = "BH"))
+        n_tests = sum(!is.na(p_ttest)),  # number of valid tests (signatures)
+        # p_ttest_Bonf  = ifelse(all(is.na(p_ttest)), NA_real_, pmin(p_ttest * n_tests, 1)),
+        # p_wilcox_Bonf = ifelse(all(is.na(p_wilcox)), NA_real_, pmin(p_wilcox * n_tests, 1))
       ) %>%
       ungroup()
     
-    # Top hit per tissue / exposure (choose which test to rank by)
-    if (top_by == "wilcox") {
-      top_hits <- results_df %>%
-        group_by(tissue, exposure) %>%
-        slice_min(order_by = p_wilcox, n = 1, with_ties = FALSE) %>%
-        ungroup()
-    } else {
-      top_hits <- results_df %>%
-        group_by(tissue, exposure) %>%
-        slice_min(order_by = p_ttest, n = 1, with_ties = FALSE) %>%
-        ungroup()
-    }
+    # Optional: top hit per tissue/exposure
+    top_hits <- results_df %>%
+      group_by(tissue, exposure) %>%
+      slice_min(order_by = if (top_by == "wilcox") p_wilcox else p_ttest, n = 1, with_ties = FALSE) %>%
+      ungroup()
     
+    # Return both full results and top hits
     return(list(all = results_df, top = top_hits))
   }
+  
+#################################################################  
   
   res <- compute_sig_tests_loop(mexposuresig3, tissues = c("LIVER","LUNG"), min_n = 2, top_by = "wilcox")
   res$top %>% print(n=29)
@@ -137,20 +129,21 @@ source("amsd_weighted_v_unweighted.R")
   merged_amsdsig <- mouse_amsd_output %>%
     mutate(exposure = str_replace(exposure, "1,2,3_TRICHLOROPROPANE", "TCP")) %>%
     arrange(mouse_amsd_output, tissue, exposure) %>%
-    full_join(select(arrange(res$top, tissue, exposure), -p_ttest_Bonf, -p_ttest_BH, -p_wilcox_Bonf, -p_wilcox_BH))
+    full_join(arrange(res$top, tissue, exposure)) %>%
+    mutate(p_wilcox_Bonf = pmin(p_wilcox * n_tests, 1))
 
 # plot 
+  # merged_amsdsig %>%
+  #   ggplot(aes(x = -log10(pvalues), y = -log10(p_ttest), color = tissue, label = exposure))+
+  #     geom_point()+
+  #   geom_label_repel() +
+  #   geom_hline(yintercept = -log10(0.05))+
+  #   geom_hline(yintercept = -log10(0.05/test_count))+
+  #   geom_vline(xintercept = -log10(0.05))+
+  #   geom_vline(xintercept = -log10(0.05/29))+
+  #     xlab("AMSD p-value")+
+  #     ylab("Top signature p-value (ttest)")
   merged_amsdsig %>%
-    ggplot(aes(x = -log10(pvalues), y = -log10(p_ttest), color = tissue, label = exposure))+
-      geom_point()+
-    geom_label_repel() +
-    geom_hline(yintercept = -log10(0.05))+
-    geom_hline(yintercept = -log10(0.05/test_count))+
-    geom_vline(xintercept = -log10(0.05))+
-    geom_vline(xintercept = -log10(0.05/29))+
-      xlab("AMSD p-value")+
-      ylab("Top signature p-value (ttest)")
-  mouse_amsdsig_plot <- merged_amsdsig %>%
     ggplot(aes(x = -log10(pvalues), y = -log10(p_wilcox), color = tissue, label = exposure))+
     geom_point()+
     geom_smooth(method = "lm",
@@ -165,9 +158,26 @@ source("amsd_weighted_v_unweighted.R")
     geom_vline(xintercept = -log10(0.05))+
     geom_vline(xintercept = -log10(0.05/29))+
     xlab("AMSD p-value")+
-    ylab("Top signature p-value \n(wilcoxen rank sum)")
+    ylab("Top signature p-value \n(wilcoxon rank sum)")
+
+  mouse_amsdsig_plot <- merged_amsdsig %>%
+    ggplot(aes(x = -log10(pvalues), y = -log10(p_wilcox_Bonf), color = tissue, label = exposure))+
+    geom_point()+
+    geom_smooth(method = "lm",
+                inherit.aes = FALSE,
+                aes(-log10(pvalues),
+                    -log10(p_wilcox_Bonf)),
+                color = "black")+
+    theme_classic()+
+    geom_label_repel() +
+    geom_abline(intercept = 0, slope = 1, linetype = "dashed")+
+    geom_hline(yintercept = -log10(0.05))+
+    geom_hline(yintercept = -log10(0.05/29))+
+    geom_vline(xintercept = -log10(0.05))+
+    geom_vline(xintercept = -log10(0.05/29))+
+    xlab("AMSD p-value")+
+    ylab("Top signature adj p-value \n(wilcoxon rank sum)")
   mouse_amsdsig_plot
-  
   #outlier
   mexposuresig3 %>%
     filter(exposure %in% c("VANADIUM_PENTOXIDE", "SPONTANEOUS"), tissue == "LUNG",name == "mSBS40") %>%
@@ -301,6 +311,12 @@ analyze_file <- function(file) {
       measure   = "fraction"
     )
   })
+  # Add Bonferroni correction within this comparison (per file)
+  results_frac <- results_frac %>%
+    mutate(
+      p_value_Bonf = p.adjust(p_value, method = "bonferroni"),
+      n_tests = n()  # keep number of signatures for reference
+    )
   
   # 3b. Wilcox tests on COUNTS
   results_count <- map_dfr(sig_cols, function(sig) {
@@ -321,6 +337,12 @@ analyze_file <- function(file) {
       measure   = "count"
     )
   })
+  # Add Bonferroni correction within this comparison (per file)
+  results_count <- results_count %>%
+    mutate(
+      p_value_Bonf = p.adjust(p_value, method = "bonferroni"),
+      n_tests = n()
+    )
   
   # merge into one table
   results <- bind_rows(results_frac, results_count)
@@ -349,7 +371,8 @@ top_hits <- all_results %>%
 
 ###########
 ## MAIN PLOT
-  tcga_amsdsig_plot <- full_join(ancestry_amsd_output, top_hits) %>%
+  ancestry_amsd_output <- readRDS("../outputs/ancestry_amsd_output.rds")
+  full_join(ancestry_amsd_output, top_hits) %>%
     #filter(min_anc_n > 10) %>%
     #ggplot(aes(x = -log10(pvalues), y = -log10(p_value), color = comparison, label = tumor_type, size = min_anc_n))+
     ggplot(aes(x = -log10(pvalues), y = -log10(p_value), color = comparison, label = tumor_type))+
@@ -367,8 +390,28 @@ top_hits <- all_results %>%
     geom_vline(xintercept = -log10(0.05/67))+
     xlab("AMSD p-value")+
     ylab("Top signature p-value \n(wilcoxen rank sum)")
-  tcga_amsdsig_plot
-  mouse_amsdsig_plot
+  
+  tcga_amsdsig_plot <- full_join(ancestry_amsd_output, top_hits) %>%
+    #filter(min_anc_n > 10) %>%
+    #ggplot(aes(x = -log10(pvalues), y = -log10(p_value), color = comparison, label = tumor_type, size = min_anc_n))+
+    ggplot(aes(x = -log10(pvalues), y = -log10(p_value_Bonf), color = comparison, label = tumor_type))+
+    geom_point()+
+    geom_smooth(method = "lm",
+                inherit.aes = FALSE,
+                aes(-log10(pvalues),
+                    -log10(p_value_Bonf)),
+                color = "black")+
+    theme_classic()+
+    geom_label_repel() +
+    geom_abline(intercept = 0, slope = 1, linetype = "dashed")+
+    geom_hline(yintercept = -log10(0.05))+
+    geom_hline(yintercept = -log10(0.05/67))+
+    geom_vline(xintercept = -log10(0.05))+
+    geom_vline(xintercept = -log10(0.05/67))+
+    xlab("AMSD p-value")+
+    ylab("Top signature p-value \n(wilcoxen rank sum)")
+  
+  ggarrange(mouse_amsdsig_plot, tcga_amsdsig_plot, nrow=2, labels = c("A", "B"))
   
   allplots <- ggarrange(mouse_amsdsig_plot, 
                         tcga_amsdsig_plot, 
@@ -386,9 +429,60 @@ top_hits <- all_results %>%
          units = "in"
   )
 ###########
-
-
-
+  
+  # Prepare the data
+  esca_data <- all_raw_frac %>%
+    filter(tumor_type == "ESCA") %>% 
+    select(-file) %>%
+    distinct() %>%
+    select(ancestry, SBS46, SBS88) %>%
+    pivot_longer(cols = c("SBS46", "SBS88"), names_to = "exp")
+  
+  # Compute N per ancestry × exposure
+  n_counts <- esca_data %>%
+    group_by(ancestry, exp) %>%
+    summarise(N = n(), .groups = "drop")
+  
+  # Plot with N labels
+  ggplot(esca_data, aes(x = ancestry, y = value, color = exp)) +
+    geom_boxplot() +
+    geom_jitter(height = 0, width = 0.2, alpha = 0.6) +
+    geom_text(
+      data = n_counts,
+      aes(x = ancestry, y = 0, label = paste0("N=", N), color = exp),
+      position = position_dodge(width = 0.75),
+      vjust = 1.5,
+      size = 3,
+      show.legend = FALSE
+    ) +
+    theme_minimal()
+  
+  
+  all_raw_frac  %>%
+    filter(tumor_type == "ESCA") %>% 
+    select(-file) %>%
+    unique() %>%
+    select(ancestry, SBS46, SBS88) %>%
+    pivot_longer(cols = c("SBS46", "SBS88"), names_to = "exp") %>%
+    ggplot(aes(x=ancestry,y=value, color = exp))+
+    geom_boxplot(outliers = FALSE)+
+    geom_jitter(height = 0, width = 0.2, alpha = 0.6)
+  
+  all_raw_frac  %>%
+    filter(tumor_type == "HNSC") %>% 
+    select(-file) %>%
+    unique() %>%
+    ggplot(aes(x=ancestry,y=SBS56, color = tumor_type))+
+    geom_boxplot(outliers = FALSE)+
+    geom_jitter(height = 0, width = 0.2, alpha = 0.6)
+  all_raw_frac  %>%
+    filter(tumor_type == "HNSC") %>% 
+    select(-file) %>%
+    unique() %>%
+    ggplot(aes(x=ancestry,y=SBS29, color = tumor_type))+
+    geom_boxplot(outliers = FALSE)+
+    geom_jitter(height = 0, width = 0.2, alpha = 0.6)
+  
 all_raw_frac  %>%
   filter(tumor_type == "KIRP") %>% 
   select(-file) %>%
@@ -503,6 +597,9 @@ plot_sig_volcano("eas", "eur","BLCA", measure = "fraction")
 plot_sig_volcano("eas", "eur","UCEC")
 plot_sig_volcano("eas", "eur","KIRP")
 plot_sig_volcano("eas", "eur","SARC")
+plot_sig_volcano("afr", "eur","ESCA")
+plot_sig_volcano("eas", "eur","HNSC")
+plot_sig_volcano("afr", "eur","HNSC")
 
 pdf("../outputs/tcga_sigantures_volcano_plots.pdf")
 for(i in 1:nrow(ancestry_amsd_output)){
