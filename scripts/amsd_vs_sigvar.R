@@ -96,7 +96,7 @@ plot2 <- comparison %>%
   geom_smooth(data = filter(comparison, tissue == "LIVER"),method = "lm", se = TRUE, color = "red") +
   geom_smooth(data = filter(comparison, tissue == "LUNG"),method = "lm", se = TRUE, color = "blue") +
   xlab("p-value from AMSD comparison (-log10)")+
-  ylab("p-value from sigvar mean within-sample \ndiversity bootstraps (-log10)")+
+  ylab("p-value from sigvar mean \nwithin-sample diversity bootstraps (-log10)")+
   theme_classic()+
   coord_cartesian(ylim = c(0, 3.5)) 
 

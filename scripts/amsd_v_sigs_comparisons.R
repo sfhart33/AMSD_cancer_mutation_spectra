@@ -215,6 +215,7 @@ source("amsd_vs_sigvar.R")
     group_by(trinuc) %>%
     summarise(
       pval = wilcox.test(freq[group == "ox"], freq[group == "spon"])$p.value,
+      pvalT = t.test(freq[group == "ox"], freq[group == "spon"])$p.value,
       mean_ox = mean(freq[group == "ox"], na.rm = TRUE),
       mean_spon = mean(freq[group == "spon"], na.rm = TRUE),
       .groups = "drop"
@@ -222,44 +223,64 @@ source("amsd_vs_sigvar.R")
     mutate(
       effect = mean_ox - mean_spon,            # raw difference
       log2fc = log2((mean_ox + 1e-6) / (mean_spon + 1e-6)),  # fold change
-      padj = p.adjust(pval, method = "BH")     # FDR correction
+      padj = p.adjust(pval, method = "bonferroni"),     # FDR correction
+      padjT = p.adjust(pvalT, method = "bonferroni")     # FDR correction
     )
   results_ox
-  results_tcp <- dat_long %>%
-    group_by(trinuc) %>%
-    summarise(
-      pval = wilcox.test(freq[group == "tcp"], freq[group == "spon"])$p.value,
-      mean_tcp = mean(freq[group == "tcp"], na.rm = TRUE),
-      mean_spon = mean(freq[group == "spon"], na.rm = TRUE),
-      .groups = "drop"
-    ) %>%
-    mutate(
-      effect = mean_tcp - mean_spon,            # raw difference
-      log2fc = log2((mean_tcp + 1e-6) / (mean_spon + 1e-6)),  # fold change
-      padj = p.adjust(pval, method = "BH")     # FDR correction
-    )
-  results_tcp
+  # results_tcp <- dat_long %>%
+  #   group_by(trinuc) %>%
+  #   summarise(
+  #     pval = wilcox.test(freq[group == "tcp"], freq[group == "spon"])$p.value,
+  #     mean_tcp = mean(freq[group == "tcp"], na.rm = TRUE),
+  #     mean_spon = mean(freq[group == "spon"], na.rm = TRUE),
+  #     .groups = "drop"
+  #   ) %>%
+  #   mutate(
+  #     effect = mean_tcp - mean_spon,            # raw difference
+  #     log2fc = log2((mean_tcp + 1e-6) / (mean_spon + 1e-6)),  # fold change
+  #     padj = p.adjust(pval, method = "BH")     # FDR correction
+  #   )
+  # results_tcp
   # Volcano plot (effect size vs -log10 p-value)
-  ggplot(results_ox, aes(x = effect, y = -log10(pval), label = trinuc)) +
-    geom_point(aes(color = padj < 0.1)) +
+  ox_plot <- ggplot(results_ox, aes(x = effect, y = -log10(pval), label = trinuc)) +
+    geom_hline(yintercept = -log10(0.05)) +
+    geom_hline(yintercept = -log10(0.05/96)) +
+    geom_point() +
     geom_label_repel()+
-    geom_hline(yintercept = -log10(0.05), linetype = "dashed") +
     theme_bw() +
     labs(
-      x = "Mean difference (oxazempam - spontaneous)",
-      y = "-log10(p-value)",
-      color = "FDR < 0.1"
+      x = "Mean difference \n(oxazempam - spontaneous)",
+      y = "-log10(p-value)"
     )
-  ggplot(results_tcp, aes(x = effect, y = -log10(pval), label = trinuc)) +
-    geom_point(aes(color = padj < 0.1)) +
-    geom_label_repel()+
-    geom_hline(yintercept = -log10(0.05), linetype = "dashed") +
-    theme_bw() +
-    labs(
-      x = "Mean difference (TCP - spontaneous)",
-      y = "-log10(p-value)",
-      color = "FDR < 0.1"
-    )
+  # ggplot(results_tcp, aes(x = effect, y = -log10(pval), label = trinuc)) +
+  #   geom_point(aes(color = padj < 0.1)) +
+  #   geom_label_repel()+
+  #   geom_hline(yintercept = -log10(0.05), linetype = "dashed") +
+  #   theme_bw() +
+  #   labs(
+  #     x = "Mean difference (TCP - spontaneous)",
+  #     y = "-log10(p-value)",
+  #     color = "FDR < 0.1"
+  #   )
+  
+# Mouse supp plot
+  mouse_amsdsig_plot
+  plot1
+  plot2
+  ox_plot
+  mouse_plot_full <- ggarrange(
+    ggarrange(mouse_amsdsig_plot,ox_plot,nrow = 1,ncol = 2, widths = c(0.7,0.3), labels = c("A","B")),
+    ggarrange(plot1,plot2,nrow = 1,ncol = 2, labels = c("C","D")),
+    nrow = 2,
+    ncol = 1)
+  
+  
+  ggsave("../outputs/mouse_amsd-sigs_sigvar_supp.png",
+         plot = mouse_plot_full,
+         width = 10,
+         height = 6,
+         units = "in"
+  )
 #############################
 #TCGA
 
@@ -411,116 +432,23 @@ top_hits <- all_results %>%
     xlab("AMSD p-value")+
     ylab("Top signature p-value \n(wilcoxen rank sum)")
   
-  ggarrange(mouse_amsdsig_plot, tcga_amsdsig_plot, nrow=2, labels = c("A", "B"))
-  
-  allplots <- ggarrange(mouse_amsdsig_plot, 
-                        tcga_amsdsig_plot, 
-                        mouse_plot, 
-                        anc_plot, 
-                        nrow=2, 
-                        ncol=2,  
-                        labels = c("A", "B", "C", "D"))
-  allplots
-  
-  ggsave("../outputs/amsd_v_sigs_weighted_v_unweighted.png",
-         plot = allplots,
-         width = 14,
-         height = 14,
-         units = "in"
-  )
-###########
-  
-  # Prepare the data
-  esca_data <- all_raw_frac %>%
-    filter(tumor_type == "ESCA") %>% 
-    select(-file) %>%
-    distinct() %>%
-    select(ancestry, SBS46, SBS88) %>%
-    pivot_longer(cols = c("SBS46", "SBS88"), names_to = "exp")
-  
-  # Compute N per ancestry × exposure
-  n_counts <- esca_data %>%
-    group_by(ancestry, exp) %>%
-    summarise(N = n(), .groups = "drop")
-  
-  # Plot with N labels
-  ggplot(esca_data, aes(x = ancestry, y = value, color = exp)) +
-    geom_boxplot() +
-    geom_jitter(height = 0, width = 0.2, alpha = 0.6) +
-    geom_text(
-      data = n_counts,
-      aes(x = ancestry, y = 0, label = paste0("N=", N), color = exp),
-      position = position_dodge(width = 0.75),
-      vjust = 1.5,
-      size = 3,
-      show.legend = FALSE
-    ) +
-    theme_minimal()
-  
-  
-  all_raw_frac  %>%
-    filter(tumor_type == "ESCA") %>% 
-    select(-file) %>%
-    unique() %>%
-    select(ancestry, SBS46, SBS88) %>%
-    pivot_longer(cols = c("SBS46", "SBS88"), names_to = "exp") %>%
-    ggplot(aes(x=ancestry,y=value, color = exp))+
-    geom_boxplot(outliers = FALSE)+
-    geom_jitter(height = 0, width = 0.2, alpha = 0.6)
-  
-  all_raw_frac  %>%
-    filter(tumor_type == "HNSC") %>% 
-    select(-file) %>%
-    unique() %>%
-    ggplot(aes(x=ancestry,y=SBS56, color = tumor_type))+
-    geom_boxplot(outliers = FALSE)+
-    geom_jitter(height = 0, width = 0.2, alpha = 0.6)
-  all_raw_frac  %>%
-    filter(tumor_type == "HNSC") %>% 
-    select(-file) %>%
-    unique() %>%
-    ggplot(aes(x=ancestry,y=SBS29, color = tumor_type))+
-    geom_boxplot(outliers = FALSE)+
-    geom_jitter(height = 0, width = 0.2, alpha = 0.6)
-  
-all_raw_frac  %>%
-  filter(tumor_type == "KIRP") %>% 
-  select(-file) %>%
-  unique() %>%
-  ggplot(aes(x=ancestry,y=SBS85, color = tumor_type))+
-  geom_boxplot(outliers = FALSE)+
-  geom_jitter(height = 0, width = 0.2, alpha = 0.6)
-all_raw_frac  %>%
-  select(-file) %>%
-  unique() %>%
-  filter(tumor_type == "SARC") %>%
-  ggplot(aes(x=ancestry,y=SBS54, color = tumor_type))+
-  geom_boxplot(outliers = FALSE)+
-  geom_jitter(height = 0, width = 0.2, alpha = 0.6)
-all_raw_frac  %>%
-  select(-file) %>%
-  unique() %>%
-  filter(tumor_type == "OV") %>%
-  ggplot(aes(x=ancestry,y=SBS38, color = tumor_type))+
-  geom_boxplot(outliers = FALSE)+
-  geom_jitter(height = 0, width = 0.2, alpha = 0.6)
-
-all_raw_frac %>%
-  filter(tumor_type == "OV", ancestry == "eas") %>%
-  select(-file) %>%
-  distinct() %>%
-  # keep only SBS columns that are not all zeros
-  select(where(~ !all(. == 0))) %>%
-  pivot_longer(
-    cols = starts_with("SBS"),
-    names_to = "signature",
-    values_to = "exposure"
-  ) %>%
-  filter(signature %in% c("SBS38","SBS53","SBS49","SBS7c", "SBS89","SBS3","SBS39")) %>%
-  ggplot(aes(x = signature, y = exposure, color = sample_id)) +
-    geom_jitter(height = 0,width = 0.2) +
-    theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
+  # ggarrange(mouse_amsdsig_plot, tcga_amsdsig_plot, nrow=2, labels = c("A", "B"))
+  # 
+  # allplots <- ggarrange(mouse_amsdsig_plot, 
+  #                       tcga_amsdsig_plot, 
+  #                       mouse_plot, 
+  #                       anc_plot, 
+  #                       nrow=2, 
+  #                       ncol=2,  
+  #                       labels = c("A", "B", "C", "D"))
+  # allplots
+  # 
+  # ggsave("../outputs/amsd_v_sigs_weighted_v_unweighted.png",
+  #        plot = allplots,
+  #        width = 14,
+  #        height = 14,
+  #        units = "in"
+  # )
 
 # plot_sig_volcano <- function(anc1, anc2, tumor){
 #   p <- filter(ancestry_amsd_output,
@@ -569,16 +497,17 @@ plot_sig_volcano <- function(anc1, anc2, tumor, measure = c("fraction", "count")
   n_tests <- nrow(subset_tcga)
   
   # Plot
-  ggplot(subset_tcga, aes(x = mean1 - mean2, y = -log10(p_value), label = signature)) +
-    geom_point(color = ifelse(measure == "fraction", "darkorange", "steelblue")) +
-    geom_hline(yintercept = -log10(0.05), color = "red", linetype = "dashed") +
-    geom_hline(yintercept = -log10(0.05 / n_tests), color = "blue", linetype = "dashed") +
+  ggplot(subset_tcga, aes(x = mean1 - mean2, y = -log10(p_value_Bonf), label = signature)) +
+    geom_point() +
+    geom_hline(yintercept = -log10(0.05)) +
+    geom_hline(yintercept = -log10(0.05 / 67)) +
     geom_label_repel(max.overlaps = 20) +
+    theme_minimal() +
     labs(
       title = paste0(
-        tumor, ": ", anc1, " vs ", anc2,
-        ", AMSD p = ", signif(p, 3),
-        " [", measure, "]"
+        tumor, ": ", anc1, " vs ", anc2#,
+        #", AMSD p = ", signif(p, 3),
+        #" [", measure, "]"
       ),
       x = "Difference in means",
       y = "-log10(p-value)"
@@ -590,16 +519,26 @@ plot_sig_volcano("afr", "eas","LUAD", measure = "fraction")
 plot_sig_volcano("eas", "eur","LUAD", measure = "count")
 plot_sig_volcano("eas", "eur","LUAD", measure = "fraction")
 
+plot_sig_volcano("afr", "eur","LUAD", measure = "fraction")
+plot_sig_volcano("afr", "eur","LUAD")
+
 
 plot_sig_volcano("eas", "eur","BLCA", measure = "count")
 plot_sig_volcano("eas", "eur","BLCA", measure = "fraction")
 
 plot_sig_volcano("eas", "eur","UCEC")
 plot_sig_volcano("eas", "eur","KIRP")
+plot_sig_volcano("afr", "eas","KIRP")
+plot_sig_volcano("eas", "eur","KIRC")
 plot_sig_volcano("eas", "eur","SARC")
+plot_sig_volcano("eas", "eur","ESCA")
 plot_sig_volcano("afr", "eur","ESCA")
+plot_sig_volcano("eas", "eur","LIHC")
 plot_sig_volcano("eas", "eur","HNSC")
 plot_sig_volcano("afr", "eur","HNSC")
+plot_sig_volcano("eas", "eur","SKCM")
+plot_sig_volcano("eas", "eur","COAD")
+plot_sig_volcano("afr", "eas","COAD")
 
 pdf("../outputs/tcga_sigantures_volcano_plots.pdf")
 for(i in 1:nrow(ancestry_amsd_output)){
@@ -610,31 +549,221 @@ for(i in 1:nrow(ancestry_amsd_output)){
 }
 dev.off()
 
-###########################
-# load permutations
-ancestry_amsd_perms <- readRDS(file = "../outputs/ancestry_amsd_perms.rds")
-ancestry_amsd_perms
-ggplot(ancestry_amsd_perms, aes(SARC.eas_eur))+
-  geom_histogram()+
-  geom_vline(xintercept = ancestry_amsd_output[53,"cosines"])+
-  labs(title = "SARC: eas vs eur", x = "cosine distance",y = "permutation count")
-ggplot(ancestry_amsd_perms, aes(KIRP.eas_eur))+ 
-  geom_histogram()+
-  geom_vline(xintercept = ancestry_amsd_output[26,"cosines"])+
-  labs(title = "KIRP: eas vs eur", x = "cosine distance",y = "permutation count")
-ggplot(ancestry_amsd_perms, aes(OV.eas_eur))+ 
-  geom_histogram()+
-  geom_vline(xintercept = ancestry_amsd_output[42,"cosines"])+
-  labs(title = "OV: eas vs eur", x = "cosine distance",y = "permutation count")
-ggplot(ancestry_amsd_perms, aes(LUAD.afr_eas))+ 
-  geom_histogram()+
-  geom_vline(xintercept = ancestry_amsd_output[34,"cosines"])+
-  labs(title = "LUAD: afr vs eas", x = "cosine distance",y = "permutation count")
-ggplot(ancestry_amsd_perms, aes(UCEC.eas_eur))+ 
-  geom_histogram()+
-  geom_vline(xintercept = ancestry_amsd_output[66,"cosines"])+
-  labs(title = "UCEC: eas vs eur", x = "cosine distance",y = "permutation count")
 
+###########
+
+kirp1 <- plot_sig_volcano("eas", "eur","KIRP")
+kirp2 <- all_raw_frac  %>%
+  filter(tumor_type == "KIRP", ancestry %in% c("eas","eur")) %>% 
+  select(-file) %>%
+  distinct() %>%
+  select(ancestry, SBS85) %>%
+  pivot_longer(cols = c("SBS85"), names_to = "exp") %>%
+  ggplot(aes(x = value)) +
+  geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
+  facet_grid(ancestry ~ exp, scales = "free_y")  +
+  theme_minimal() +
+  labs(
+    #title = "Exposure histograms by ancestry",
+    x = "Signature exposure (fraction)",
+    y = "Sample count"
+  )
+
+plot_sig_volcano("afr", "eas","KIRP")
+all_raw_frac  %>%
+  filter(tumor_type == "KIRP", ancestry %in% c("afr", "eas","eur")) %>% 
+  select(-file) %>%
+  distinct() %>%
+  select(ancestry, SBS13, SBS85) %>%
+  pivot_longer(cols = c("SBS13", "SBS85"), names_to = "exp") %>%
+  ggplot(aes(x = value)) +
+  geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
+  facet_grid(ancestry ~ exp, scales = "free_y")  +
+  theme_minimal() +
+  labs(
+    #title = "Exposure histograms by ancestry",
+    x = "Signature exposure (fraction)",
+    y = "Sample count"
+  )
+
+sarc1 <- plot_sig_volcano("eas", "eur","SARC")
+sarc2 <- all_raw_frac  %>%
+  filter(tumor_type == "SARC", ancestry %in% c("eas","eur")) %>% 
+  select(-file) %>%
+  distinct() %>%
+  select(ancestry, SBS54) %>%
+  pivot_longer(cols = c("SBS54"), names_to = "exp") %>%
+  ggplot(aes(x = value)) +
+  geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
+  facet_grid(ancestry ~ exp, scales = "free_y")  +
+  theme_minimal() +
+  labs(
+    #title = "Exposure histograms by ancestry",
+    x = "Signature exposure (fraction)",
+    y = "Sample count"
+  )
+
+esca1 <- plot_sig_volcano("afr", "eur","ESCA")
+esca2 <- all_raw_frac  %>%
+  filter(tumor_type == "ESCA", ancestry %in% c("afr","eur")) %>% 
+  select(-file) %>%
+  distinct() %>%
+  select(ancestry, SBS88, SBS46) %>%
+  pivot_longer(cols = c("SBS88", "SBS46"), names_to = "exp") %>%
+  ggplot(aes(x = value)) +
+  geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
+  facet_grid(ancestry ~ exp, scales = "free_y")  +
+  theme_minimal() +
+  scale_x_continuous(breaks=c(0,0.1,0.2))+
+  labs(
+    x = "Signature exposure (fraction)",
+    y = "Sample count"
+  )
+
+luad1 <- plot_sig_volcano("afr", "eas","LUAD")
+luad2 <- all_raw_frac  %>%
+  filter(tumor_type == "LUAD", ancestry %in% c("afr","eas","eur")) %>% 
+  select(-file) %>%
+  distinct() %>%
+  select(ancestry, SBS4) %>%
+  pivot_longer(cols = c("SBS4"), names_to = "exp") %>%
+  ggplot(aes(x = value)) +
+  geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
+  facet_grid(ancestry ~ exp, scales = "free_y")  +
+  theme_minimal() +
+  labs(
+    #title = "Exposure histograms by ancestry",
+    x = "Signature exposure (fraction)",
+    y = "Sample count"
+  )
+
+
+# plot_sig_volcano("afr", "eur","HNSC")
+# plot_sig_volcano("eas", "eur","HNSC")
+# all_raw_frac  %>%
+#   filter(tumor_type == "HNSC", ancestry %in% c("afr", "eas","eur")) %>%
+#   select(-file) %>%
+#   distinct() %>%
+#   select(ancestry, SBS46, SBS56, SBS29) %>%
+#   pivot_longer(cols = c("SBS46", "SBS56", "SBS29"), names_to = "exp") %>%
+#   ggplot(aes(x = value)) +
+#   geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
+#   facet_grid(ancestry ~ exp, scales = "free_y")  +
+#   theme_minimal() +
+#   labs(
+#     #title = "Exposure histograms by ancestry",
+#     x = "Signature exposure (fraction)",
+#     y = "Sample count"
+#   )
+all_raw_frac  %>%
+  filter(tumor_type == "COAD", ancestry %in% c("eas","eur")) %>%
+  select(-file) %>%
+  distinct() %>%
+  select(ancestry, SBS10a, SBS28) %>%
+  pivot_longer(cols = c("SBS10a", "SBS28"), names_to = "exp") %>%
+  ggplot(aes(x = value)) +
+  geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
+  facet_grid(ancestry ~ exp, scales = "free_y")  +
+  theme_minimal() +
+  labs(
+    #title = "Exposure histograms by ancestry",
+    x = "Signature exposure (fraction)",
+    y = "Sample count"
+  )
+
+
+tcga_multiplot <- ggarrange(tcga_amsdsig_plot, 
+                            ggarrange(kirp1, sarc1, esca1, luad1, 
+                                      kirp2, sarc2, esca2, luad2, nrow = 2, ncol = 4),
+                            nrow=2, labels = c("A", "B"))
+
+ggsave("../outputs/tcga_amsd-sigs_supp.png",
+       plot = tcga_multiplot,
+       width = 10,
+       height = 10,
+       units = "in"
+)
+
+
+# all_raw_frac  %>%
+#   filter(tumor_type == "LIHC", ancestry %in% c("eas","eur")) %>% 
+#   select(-file) %>%
+#   unique() %>%
+#   select(ancestry, SBS16, SBS22, SBS24) %>%
+#   pivot_longer(cols = c("SBS16", "SBS22", "SBS24"), names_to = "exp") %>%
+#   ggplot(aes(x=ancestry,y=value, color = exp))+
+#   geom_boxplot(outliers = FALSE)+
+#   geom_jitter(height = 0, width = 0.2, alpha = 0.6)  
+# 
+# all_raw_frac  %>%
+#   filter(tumor_type == "HNSC") %>% 
+#   select(-file) %>%
+#   unique() %>%
+#   ggplot(aes(x=ancestry,y=SBS56, color = tumor_type))+
+#   geom_boxplot(outliers = FALSE)+
+#   geom_jitter(height = 0, width = 0.2, alpha = 0.6)
+# all_raw_frac  %>%
+#   filter(tumor_type == "HNSC") %>% 
+#   select(-file) %>%
+#   unique() %>%
+#   ggplot(aes(x=ancestry,y=SBS29, color = tumor_type))+
+#   geom_boxplot(outliers = FALSE)+
+#   geom_jitter(height = 0, width = 0.2, alpha = 0.6)
+# 
+# all_raw_frac  %>%
+#   filter(tumor_type == "KIRP") %>% 
+#   select(-file) %>%
+#   unique() %>%
+#   ggplot(aes(x=ancestry,y=SBS85, color = tumor_type))+
+#   geom_boxplot(outliers = FALSE)+
+#   geom_jitter(height = 0, width = 0.2, alpha = 0.6)
+# all_raw_frac  %>%
+#   select(-file) %>%
+#   unique() %>%
+#   filter(tumor_type == "SARC") %>%
+#   ggplot(aes(x=ancestry,y=SBS54, color = tumor_type))+
+#   geom_boxplot(outliers = FALSE)+
+#   geom_jitter(height = 0, width = 0.2, alpha = 0.6)
+# all_raw_frac  %>%
+#   select(-file) %>%
+#   unique() %>%
+#   filter(tumor_type == "OV") %>%
+#   ggplot(aes(x=ancestry,y=SBS38, color = tumor_type))+
+#   geom_boxplot(outliers = FALSE)+
+#   geom_jitter(height = 0, width = 0.2, alpha = 0.6)
+# all_raw_frac  %>%
+#   select(-file) %>%
+#   unique() %>%
+#   filter(tumor_type == "SKCM") %>%
+#   ggplot(aes(x=ancestry,y=SBS84, color = tumor_type))+
+#   geom_boxplot(outliers = FALSE)+
+#   geom_jitter(height = 0, width = 0.2, alpha = 0.6)
+# 
+# ###########################
+# # load permutations
+# ancestry_amsd_perms <- readRDS(file = "../outputs/ancestry_amsd_perms.rds")
+# ancestry_amsd_perms
+# ggplot(ancestry_amsd_perms, aes(SARC.eas_eur))+
+#   geom_histogram()+
+#   geom_vline(xintercept = ancestry_amsd_output[53,"cosines"])+
+#   labs(title = "SARC: eas vs eur", x = "cosine distance",y = "permutation count")
+# ggplot(ancestry_amsd_perms, aes(KIRP.eas_eur))+ 
+#   geom_histogram()+
+#   geom_vline(xintercept = ancestry_amsd_output[26,"cosines"])+
+#   labs(title = "KIRP: eas vs eur", x = "cosine distance",y = "permutation count")
+# ggplot(ancestry_amsd_perms, aes(OV.eas_eur))+ 
+#   geom_histogram()+
+#   geom_vline(xintercept = ancestry_amsd_output[42,"cosines"])+
+#   labs(title = "OV: eas vs eur", x = "cosine distance",y = "permutation count")
+# ggplot(ancestry_amsd_perms, aes(LUAD.afr_eas))+ 
+#   geom_histogram()+
+#   geom_vline(xintercept = ancestry_amsd_output[34,"cosines"])+
+#   labs(title = "LUAD: afr vs eas", x = "cosine distance",y = "permutation count")
+# ggplot(ancestry_amsd_perms, aes(UCEC.eas_eur))+ 
+#   geom_histogram()+
+#   geom_vline(xintercept = ancestry_amsd_output[66,"cosines"])+
+#   labs(title = "UCEC: eas vs eur", x = "cosine distance",y = "permutation count")
+# 
 
 ################# Looking comparison plots again
 plot_sig_means <- function(anc1, anc2, tumor, measure = c("fraction", "count")) {
