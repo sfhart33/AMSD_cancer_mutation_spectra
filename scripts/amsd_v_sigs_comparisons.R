@@ -967,3 +967,39 @@ ggsave("../outputs/Figure3_revision.svg",
        width = 10,
        height = 10,
        units = "in")
+
+
+### number of UCEC and COAD SBS10
+
+select(all_raw_frac, -file) %>%
+  distinct() %>% 
+  filter(tumor_type %in% c("UCEC","COAD")) %>%
+  group_by(tumor_type, ancestry) %>%
+  summarise(total = n(),
+            SBS10a_count = sum(SBS10a > 0),
+            SBS10a_frac = mean(SBS10a > 0),
+            SBS10b_count = sum(SBS10b > 0),
+            SBS10b_frac = mean(SBS10b > 0),
+            SBS10ab_count = sum(SBS10a > 0 & SBS10b > 0),
+            SBS10ab_frac = mean(SBS10a > 0 & SBS10b > 0))
+
+select(all_raw_frac, -file) %>%
+  distinct() %>% 
+  filter(tumor_type %in% c("ESCA")) %>%
+  group_by(tumor_type, ancestry) %>%
+  summarise(total = n(),
+            SBS17a_count = sum(SBS17a > 0),
+            SBS17a_frac = mean(SBS17a > 0),
+            SBS17b_count = sum(SBS17b > 0),
+            SBS17b_frac = mean(SBS17b > 0),
+            SBS17ab_count = sum(SBS17a > 0 & SBS17b > 0),
+            SBS17ab_frac = mean(SBS17a > 0 & SBS17b > 0))
+full_join(ancestry_amsd_output, top_hits) %>% filter(tumor_type == "SARC")
+full_join(ancestry_amsd_output, top_hits) %>% filter(tumor_type == "LUAD")
+select(all_raw_frac, -file) %>%
+  distinct() %>% 
+  filter(tumor_type %in% c("SARC")) %>%
+  group_by(tumor_type, ancestry) %>%
+  summarise(total = n(),
+            SBS_count = sum(SBS54 > 0),
+            SBS_frac = mean(SBS54 > 0))
