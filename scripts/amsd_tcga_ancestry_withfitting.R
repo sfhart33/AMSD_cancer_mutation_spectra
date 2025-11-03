@@ -170,7 +170,7 @@ make_sigprofiler_input <- function(mat) {
       make_sigprofiler_input()  # rows = samples, cols = SBS96
     outdir_anc1 <- paste0("../outputs/sigprofiler_", tissue_type, "_", ancestry1)
     
-    "//gs-ddn2/gs-vol1/home/sfhart/github/AMSD_cancer_mutation_spectra/outputs/figure_3_revised.png"(
+    cosmic_fit(
       samples = sp_anc1,
       output = outdir_anc1,
       input_type = "matrix",
@@ -265,3 +265,4 @@ make_sigprofiler_input <- function(mat) {
 # save
   saveRDS(ancestry_amsd_output, "../outputs/ancestry_amsd_output.rds")
   saveRDS(perms, "../outputs/ancestry_amsd_perms.rds")
+
