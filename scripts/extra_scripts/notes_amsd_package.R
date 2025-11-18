@@ -38,4 +38,7 @@ devtools::document()
   usethis::git_push(tag = TRUE)
   
   
-  # make a vignette
+  # after updating amsd function to fix bug
+  devtools::document()
+  usethis::use_version("patch")
+  
