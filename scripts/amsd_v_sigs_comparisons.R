@@ -13,7 +13,7 @@ source("amsd_vs_sigvar.R")
   # list of samples and attributes
   sample_table <- mouse_carcinogen_spectra %>%
     rownames_to_column(var = "label") %>%
-    select(label) %>%
+    dplyr::select(label) %>%
     separate(label, c("tissue","rest"), sep = "_", extra = "merge", remove = FALSE) %>%
     separate(rest, 
              into = c("exposure", "rep"), 
@@ -295,7 +295,7 @@ analyze_file <- function(file) {
   
   # --- keep counts ---
   dat_counts <- dat %>%
-    select(all_of(c(sig_cols, "ancestry", "tissue_type"))) %>%
+    dplyr::select(all_of(c(sig_cols, "ancestry", "tissue_type"))) %>%
     mutate(file = basename(file),
            tumor_type = unique(dat$tissue_type))
   
@@ -303,7 +303,7 @@ analyze_file <- function(file) {
   dat_frac <- dat %>%
     mutate(row_sum = rowSums(across(all_of(sig_cols)))) %>%
     mutate(across(all_of(sig_cols), ~ .x / row_sum)) %>%
-    select(-row_sum) %>%
+    dplyr::select(-row_sum) %>%
     mutate(file = basename(file),
            tumor_type = unique(dat$tissue_type))
   
@@ -555,9 +555,9 @@ dev.off()
 kirp1 <- plot_sig_volcano("eas", "eur","KIRP")
 kirp2 <- all_raw_frac  %>%
   filter(tumor_type == "KIRP", ancestry %in% c("eas","eur")) %>% 
-  select(-file) %>%
+  dplyr::select(-file) %>%
   distinct() %>%
-  select(ancestry, SBS85) %>%
+  dplyr::select(ancestry, SBS85) %>%
   pivot_longer(cols = c("SBS85"), names_to = "exp") %>%
   ggplot(aes(x = value)) +
   geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
@@ -572,9 +572,9 @@ kirp2 <- all_raw_frac  %>%
 plot_sig_volcano("afr", "eas","KIRP")
 all_raw_frac  %>%
   filter(tumor_type == "KIRP", ancestry %in% c("afr", "eas","eur")) %>% 
-  select(-file) %>%
+  dplyr::select(-file) %>%
   distinct() %>%
-  select(ancestry, SBS13, SBS85) %>%
+  dplyr::select(ancestry, SBS13, SBS85) %>%
   pivot_longer(cols = c("SBS13", "SBS85"), names_to = "exp") %>%
   ggplot(aes(x = value)) +
   geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
@@ -589,9 +589,9 @@ all_raw_frac  %>%
 sarc1 <- plot_sig_volcano("eas", "eur","SARC")
 sarc2 <- all_raw_frac  %>%
   filter(tumor_type == "SARC", ancestry %in% c("eas","eur")) %>% 
-  select(-file) %>%
+  dplyr::select(-file) %>%
   distinct() %>%
-  select(ancestry, SBS54) %>%
+  dplyr::select(ancestry, SBS54) %>%
   pivot_longer(cols = c("SBS54"), names_to = "exp") %>%
   ggplot(aes(x = value)) +
   geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
@@ -606,9 +606,9 @@ sarc2 <- all_raw_frac  %>%
 esca1 <- plot_sig_volcano("afr", "eur","ESCA")
 esca2 <- all_raw_frac  %>%
   filter(tumor_type == "ESCA", ancestry %in% c("afr","eur")) %>% 
-  select(-file) %>%
+  dplyr::select(-file) %>%
   distinct() %>%
-  select(ancestry, SBS88, SBS46) %>%
+  dplyr::select(ancestry, SBS88, SBS46) %>%
   pivot_longer(cols = c("SBS88", "SBS46"), names_to = "exp") %>%
   ggplot(aes(x = value)) +
   geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
@@ -623,9 +623,9 @@ esca2 <- all_raw_frac  %>%
 luad1 <- plot_sig_volcano("afr", "eas","LUAD")
 luad2 <- all_raw_frac  %>%
   filter(tumor_type == "LUAD", ancestry %in% c("afr","eas","eur")) %>% 
-  select(-file) %>%
+  dplyr::select(-file) %>%
   distinct() %>%
-  select(ancestry, SBS4) %>%
+  dplyr::select(ancestry, SBS4) %>%
   pivot_longer(cols = c("SBS4"), names_to = "exp") %>%
   ggplot(aes(x = value)) +
   geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
@@ -642,9 +642,9 @@ luad2 <- all_raw_frac  %>%
 # plot_sig_volcano("eas", "eur","HNSC")
 # all_raw_frac  %>%
 #   filter(tumor_type == "HNSC", ancestry %in% c("afr", "eas","eur")) %>%
-#   select(-file) %>%
+#   dplyr::select(-file) %>%
 #   distinct() %>%
-#   select(ancestry, SBS46, SBS56, SBS29) %>%
+#   dplyr::select(ancestry, SBS46, SBS56, SBS29) %>%
 #   pivot_longer(cols = c("SBS46", "SBS56", "SBS29"), names_to = "exp") %>%
 #   ggplot(aes(x = value)) +
 #   geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
@@ -657,9 +657,9 @@ luad2 <- all_raw_frac  %>%
 #   )
 all_raw_frac  %>%
   filter(tumor_type == "COAD", ancestry %in% c("eas","eur")) %>%
-  select(-file) %>%
+  dplyr::select(-file) %>%
   distinct() %>%
-  select(ancestry, SBS10a, SBS28) %>%
+  dplyr::select(ancestry, SBS10a, SBS28) %>%
   pivot_longer(cols = c("SBS10a", "SBS28"), names_to = "exp") %>%
   ggplot(aes(x = value)) +
   geom_histogram(position = "identity", alpha = 0.6, bins = 30) +
@@ -687,9 +687,9 @@ ggsave("../outputs/tcga_amsd-sigs_supp.png",
 
 # all_raw_frac  %>%
 #   filter(tumor_type == "LIHC", ancestry %in% c("eas","eur")) %>% 
-#   select(-file) %>%
+#   dplyr::select(-file) %>%
 #   unique() %>%
-#   select(ancestry, SBS16, SBS22, SBS24) %>%
+#   dplyr::select(ancestry, SBS16, SBS22, SBS24) %>%
 #   pivot_longer(cols = c("SBS16", "SBS22", "SBS24"), names_to = "exp") %>%
 #   ggplot(aes(x=ancestry,y=value, color = exp))+
 #   geom_boxplot(outliers = FALSE)+
@@ -697,14 +697,14 @@ ggsave("../outputs/tcga_amsd-sigs_supp.png",
 # 
 # all_raw_frac  %>%
 #   filter(tumor_type == "HNSC") %>% 
-#   select(-file) %>%
+#   dplyr::select(-file) %>%
 #   unique() %>%
 #   ggplot(aes(x=ancestry,y=SBS56, color = tumor_type))+
 #   geom_boxplot(outliers = FALSE)+
 #   geom_jitter(height = 0, width = 0.2, alpha = 0.6)
 # all_raw_frac  %>%
 #   filter(tumor_type == "HNSC") %>% 
-#   select(-file) %>%
+#   dplyr::select(-file) %>%
 #   unique() %>%
 #   ggplot(aes(x=ancestry,y=SBS29, color = tumor_type))+
 #   geom_boxplot(outliers = FALSE)+
@@ -712,27 +712,27 @@ ggsave("../outputs/tcga_amsd-sigs_supp.png",
 # 
 # all_raw_frac  %>%
 #   filter(tumor_type == "KIRP") %>% 
-#   select(-file) %>%
+#   dplyr::select(-file) %>%
 #   unique() %>%
 #   ggplot(aes(x=ancestry,y=SBS85, color = tumor_type))+
 #   geom_boxplot(outliers = FALSE)+
 #   geom_jitter(height = 0, width = 0.2, alpha = 0.6)
 # all_raw_frac  %>%
-#   select(-file) %>%
+#   dplyr::select(-file) %>%
 #   unique() %>%
 #   filter(tumor_type == "SARC") %>%
 #   ggplot(aes(x=ancestry,y=SBS54, color = tumor_type))+
 #   geom_boxplot(outliers = FALSE)+
 #   geom_jitter(height = 0, width = 0.2, alpha = 0.6)
 # all_raw_frac  %>%
-#   select(-file) %>%
+#   dplyr::select(-file) %>%
 #   unique() %>%
 #   filter(tumor_type == "OV") %>%
 #   ggplot(aes(x=ancestry,y=SBS38, color = tumor_type))+
 #   geom_boxplot(outliers = FALSE)+
 #   geom_jitter(height = 0, width = 0.2, alpha = 0.6)
 # all_raw_frac  %>%
-#   select(-file) %>%
+#   dplyr::select(-file) %>%
 #   unique() %>%
 #   filter(tumor_type == "SKCM") %>%
 #   ggplot(aes(x=ancestry,y=SBS84, color = tumor_type))+
@@ -971,7 +971,7 @@ ggsave("../outputs/Figure3_revision.svg",
 
 ### number of UCEC and COAD SBS10
 
-select(all_raw_frac, -file) %>%
+dplyr::select(all_raw_frac, -file) %>%
   distinct() %>% 
   filter(tumor_type %in% c("UCEC","COAD")) %>%
   group_by(tumor_type, ancestry) %>%
@@ -983,7 +983,7 @@ select(all_raw_frac, -file) %>%
             SBS10ab_count = sum(SBS10a > 0 & SBS10b > 0),
             SBS10ab_frac = mean(SBS10a > 0 & SBS10b > 0))
 
-select(all_raw_frac, -file) %>%
+dplyr::select(all_raw_frac, -file) %>%
   distinct() %>% 
   filter(tumor_type %in% c("ESCA")) %>%
   group_by(tumor_type, ancestry) %>%
@@ -996,7 +996,7 @@ select(all_raw_frac, -file) %>%
             SBS17ab_frac = mean(SBS17a > 0 & SBS17b > 0))
 full_join(ancestry_amsd_output, top_hits) %>% filter(tumor_type == "SARC")
 full_join(ancestry_amsd_output, top_hits) %>% filter(tumor_type == "LUAD")
-select(all_raw_frac, -file) %>%
+dplyr::select(all_raw_frac, -file) %>%
   distinct() %>% 
   filter(tumor_type %in% c("SARC")) %>%
   group_by(tumor_type, ancestry) %>%

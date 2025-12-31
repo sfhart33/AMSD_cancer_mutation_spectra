@@ -129,7 +129,10 @@ ox_gene <- make_snv_matrix(snvs_all, sample_prefix = "LIVER_OX", filter_col = "i
 ox_nongene <- make_snv_matrix(snvs_all, sample_prefix = "LIVER_OX", filter_col = "in_gene",filter_val = FALSE)
 ox_nonexon <- make_snv_matrix(snvs_all, sample_prefix = "LIVER_OX", filter_col = "in_exon",filter_val = FALSE)
 
+plot_spectrum(colSums(spon_gene))
 plot_spectrum(colSums(spon_nongene))
+plot_spectrum(colSums(ox_all))
+plot_spectrum(colSums(ox_gene))
 plot_spectrum(colSums(ox_nongene))
 
 amsd_all <- amsd(spon_all,
